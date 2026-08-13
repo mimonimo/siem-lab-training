@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>브릿지웍스 사내 통합포털</title>
+<style>
+  /* System-font stack: works offline (no CDN dependency). */
+  :root{
+    --bw-navy:#122a4a; --bw-blue:#1f5fbf; --bw-accent:#0e9f6e;
+    --bw-bg:#eef2f7; --bw-card:#ffffff; --bw-line:#d7dee8; --bw-text:#1c2733;
+    --bw-mut:#5b6b7c; --bw-warn:#c0392b;
+    --con-bg:#0f1720; --con-line:#1f2b38; --con-txt:#cfe3ff; --con-mut:#7f93a8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Malgun Gothic","맑은 고딕",-apple-system,"Segoe UI",
+    "Apple SD Gothic Neo",sans-serif;background:var(--bw-bg);color:var(--bw-text);
+    padding-bottom:280px;}
+  a{color:inherit;text-decoration:none}
+  /* top bar */
+  .topbar{background:var(--bw-navy);color:#fff;padding:0 24px;height:58px;
+    display:flex;align-items:center;justify-content:space-between}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:700;font-size:18px;letter-spacing:.2px}
+  .brand .mark{width:30px;height:30px;border-radius:7px;
+    background:linear-gradient(135deg,var(--bw-blue),var(--bw-accent));
+    display:flex;align-items:center;justify-content:center;font-size:15px}
+  .brand small{font-weight:400;opacity:.7;font-size:12px;margin-left:4px}
+  .gnb{display:flex;gap:22px;font-size:14px}
+  .gnb a{opacity:.85} .gnb a:hover{opacity:1}
+  .userbox{font-size:13px;opacity:.85;display:flex;gap:10px;align-items:center}
+  .userbox .av{width:26px;height:26px;border-radius:50%;
+    background:#33507a;display:flex;align-items:center;justify-content:center;font-size:12px}
+  /* layout */
+  .wrap{max-width:1080px;margin:22px auto;padding:0 20px;
+    display:grid;grid-template-columns:2fr 1fr;gap:20px}
+  .hero{grid-column:1/3;background:linear-gradient(100deg,#173259,#1f5fbf);
+    color:#fff;border-radius:12px;padding:26px 28px;position:relative;overflow:hidden}
+  .hero h1{margin:0 0 6px;font-size:22px}
+  .hero p{margin:0;opacity:.9;font-size:14px}
+  .hero .pill{position:absolute;right:22px;top:22px;background:rgba(255,255,255,.15);
+    border:1px solid rgba(255,255,255,.3);padding:5px 12px;border-radius:20px;font-size:12px}
+  .card{background:var(--bw-card);border:1px solid var(--bw-line);border-radius:12px;padding:18px 20px}
+  .card h2{margin:0 0 14px;font-size:15px;display:flex;align-items:center;gap:8px}
+  .card h2 .dot{width:7px;height:7px;border-radius:50%;background:var(--bw-blue)}
+  .notice li{list-style:none;display:flex;justify-content:space-between;gap:10px;
+    padding:9px 0;border-bottom:1px dashed var(--bw-line);font-size:14px}
+  .notice li:last-child{border-bottom:0}
+  .notice .tag{font-size:11px;color:#fff;background:var(--bw-blue);border-radius:4px;padding:1px 6px;margin-right:8px}
+  .notice .tag.hr{background:#8e44ad}.notice .tag.sec{background:var(--bw-warn)}
+  .notice time{color:var(--bw-mut);font-size:12px;white-space:nowrap}
+  .quick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .quick a{border:1px solid var(--bw-line);border-radius:9px;padding:14px;font-size:13px;
+    display:flex;flex-direction:column;gap:6px;background:#fafcff}
+  .quick a:hover{border-color:var(--bw-blue)}
+  .quick .ic{font-size:20px}
+  .kpi{display:flex;gap:14px;margin-top:2px}
+  .kpi div{flex:1;text-align:center;background:#fafcff;border:1px solid var(--bw-line);
+    border-radius:9px;padding:12px 6px}
+  .kpi b{display:block;font-size:20px;color:var(--bw-navy)}
+  .kpi span{font-size:11px;color:var(--bw-mut)}
+  /* ===== 실습 콘솔 (docked) ===== */
+  .console{position:fixed;left:0;right:0;bottom:0;height:262px;background:var(--con-bg);
+    border-top:3px solid var(--bw-blue);color:var(--con-txt);
+    display:grid;grid-template-columns:300px 1fr;font-size:13px;z-index:50}
+  .con-left{padding:16px 18px;border-right:1px solid var(--con-line);display:flex;
+    flex-direction:column;gap:10px}
+  .con-left h3{margin:0;font-size:14px;color:#fff;display:flex;align-items:center;gap:8px}
+  .con-left h3 .live{width:8px;height:8px;border-radius:50%;background:#e74c3c;
+    box-shadow:0 0 0 0 rgba(231,76,60,.6);animation:pulse 1.6s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(231,76,60,.6)}70%{box-shadow:0 0 0 9px rgba(231,76,60,0)}100%{box-shadow:0 0 0 0 rgba(231,76,60,0)}}
+  .con-left p{margin:0;color:var(--con-mut);font-size:12px;line-height:1.5}
+  .btns{display:flex;flex-direction:column;gap:8px;margin-top:2px}
+  .btns button{border:0;border-radius:8px;padding:10px 12px;font-size:13px;cursor:pointer;
+    text-align:left;color:#fff;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+  .btns button:disabled{opacity:.5;cursor:wait}
+  .b-normal{background:#2f6f4f}.b-normal:hover{background:#38855f}
+  .b-suspect{background:#a23a2f}.b-suspect:hover{background:#c0392b}
+  .b-flood{background:#9a6b1e}.b-flood:hover{background:#b8842a}
+  .btns small{font-weight:400;opacity:.8;font-size:11px}
+  .con-right{padding:12px 16px;display:flex;flex-direction:column;min-width:0}
+  .con-right .bar{display:flex;justify-content:space-between;align-items:center;
+    color:var(--con-mut);font-size:12px;margin-bottom:8px}
+  .con-right .bar b{color:#cfe3ff}
+  .logview{flex:1;background:#0a1017;border:1px solid var(--con-line);border-radius:8px;
+    padding:10px 12px;overflow:auto;font-family:"Consolas","D2Coding",ui-monospace,monospace;
+    font-size:12px;line-height:1.6;white-space:pre-wrap;word-break:break-all}
+  .logview .ln{color:#9fb4cc}
+  .logview .ln.att{color:#ff9a8a}
+  .logview .ln.new{background:rgba(31,95,191,.25);border-radius:3px}
+  .foot-note{color:var(--con-mut);font-size:11px;margin-top:8px}
+  @media(max-width:820px){.wrap{grid-template-columns:1fr}.hero,.card{grid-column:auto}
+    .console{grid-template-columns:1fr;height:auto;position:static}}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand"><span class="mark">B</span>브릿지웍스 <small>사내 통합포털</small></div>
+    <nav class="gnb">
+      <a href="#">홈</a><a href="#">공지사항</a><a href="#">부서/조직</a>
+      <a href="#">문서함</a><a href="#">근태/휴가</a><a href="#">헬프데스크</a>
+    </nav>
+    <div class="userbox"><span class="av">김</span>김현우 대리 · 정보보안팀</div>
+  </div>
+
+  <div class="wrap">
+    <section class="hero">
+      <div class="pill">2026 상반기 정보보안 캠페인 진행 중</div>
+      <h1>안녕하세요, 김현우님 👋</h1>
+      <p>오늘도 안전한 하루 되세요. 미확인 공지 3건, 결재 대기 2건이 있습니다.</p>
+    </section>
+
+    <section class="card">
+      <h2><span class="dot"></span>공지사항</h2>
+      <ul class="notice">
+        <li><span><span class="tag sec">보안</span>[필독] 사내 계정 비밀번호 정기 변경 안내</span><time>2026-08-13</time></li>
+        <li><span><span class="tag">일반</span>3분기 전사 워크숍 일정 공유</span><time>2026-08-12</time></li>
+        <li><span><span class="tag hr">인사</span>하반기 승진 대상자 공고</span><time>2026-08-11</time></li>
+        <li><span><span class="tag">일반</span>사옥 정전 점검(주말) 안내</span><time>2026-08-09</time></li>
+      </ul>
+    </section>
+
+    <aside class="card">
+      <h2><span class="dot"></span>바로가기</h2>
+      <div class="quick">
+        <a href="#"><span class="ic">🗓️</span>전자결재</a>
+        <a href="#"><span class="ic">💬</span>메신저</a>
+        <a href="#"><span class="ic">📁</span>공유드라이브</a>
+        <a href="#"><span class="ic">🛠️</span>IT 헬프데스크</a>
+      </div>
+    </aside>
+
+    <section class="card" style="grid-column:1/3">
+      <h2><span class="dot"></span>시스템 현황</h2>
+      <div class="kpi">
+        <div><b>정상</b><span>웹서비스</span></div>
+        <div><b>1,284</b><span>오늘 방문</span></div>
+        <div><b>0</b><span>미해결 장애</span></div>
+        <div><b>99.98%</b><span>가동률</span></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===================== 실습 콘솔 ===================== -->
+  <div class="console">
+    <div class="con-left">
+      <h3><span class="live"></span>실습 콘솔 · 실시간 탐지</h3>
+      <p>아래 버튼을 누르면 이 포털의 웹 접근 로그가 실제로 생성됩니다.
+         잠시 뒤 Wazuh 대시보드에서 탐지 알림을 확인해 보세요.</p>
+      <div class="btns">
+        <button class="b-normal" data-ep="normal">정상 페이지 열람<small>일반 GET 요청</small></button>
+        <button class="b-suspect" data-ep="suspect">의심스러운 검색 요청<small>cmd= 파라미터 (웹셸 패턴)</small></button>
+        <button class="b-flood" data-ep="flood">짧은 간격 반복 요청<small>동일 경로 연속 요청</small></button>
+      </div>
+    </div>
+    <div class="con-right">
+      <div class="bar"><span>실시간 access.log 미리보기</span>
+        <span>대상 파일: <b>/var/log/apache2/access.log</b></span></div>
+      <div class="logview" id="logview"><span class="ln">// 버튼을 눌러 로그를 생성하세요…</span></div>
+      <div class="foot-note" id="note">이 페이지는 어떤 시스템 명령도 실행하지 않습니다 — 서버는 요청을 받아 로그 한 줄만 기록합니다.</div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  var view = document.getElementById('logview');
+  var note = document.getElementById('note');
+  var buttons = document.querySelectorAll('.btns button');
+
+  function render(lines, opts){
+    opts = opts || {};
+    view.innerHTML = '';
+    lines.forEach(function(l, i){
+      var d = document.createElement('div');
+      var attack = /cmd=|sqlmap|search\.php/.test(l);
+      d.className = 'ln' + (attack ? ' att' : '') +
+                    (opts.newFrom !== undefined && i >= opts.newFrom ? ' new' : '');
+      d.textContent = l;
+      view.appendChild(d);
+    });
+    view.scrollTop = view.scrollHeight;
+  }
+
+  function refresh(newFrom){
+    fetch('/demo/log?n=15').then(function(r){return r.json();})
+      .then(function(j){ render(j.lines || [], {newFrom:newFrom}); })
+      .catch(function(){});
+  }
+
+  function fire(ep, btn){
+    buttons.forEach(function(b){b.disabled = true;});
+    note.textContent = '요청 전송 중… 서버가 access.log에 기록합니다.';
+    fetch('/demo/' + ep, {method:'POST'})
+      .then(function(r){return r.json();})
+      .then(function(j){
+        note.innerHTML = (j.detail || '기록 완료') +
+          ' &nbsp;→&nbsp; 몇 초 뒤 <b>Wazuh 대시보드</b>에서 알림을 확인하세요.';
+        // show current tail, highlighting the newly added lines
+        var added = (j.added || 1);
+        fetch('/demo/log?n=15').then(function(r){return r.json();})
+          .then(function(jj){
+            var lines = jj.lines || [];
+            render(lines, {newFrom: Math.max(0, lines.length - added)});
+          });
+      })
+      .catch(function(){ note.textContent = '요청 실패 — 데모 서버(Flask)가 실행 중인지 확인하세요.'; })
+      .finally(function(){ buttons.forEach(function(b){b.disabled = false;}); });
+  }
+
+  buttons.forEach(function(b){
+    b.addEventListener('click', function(){ fire(b.getAttribute('data-ep'), b); });
+  });
+  refresh();          // initial tail
+})();
+</script>
+</body>
+</html>

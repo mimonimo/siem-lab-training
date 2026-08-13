@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>실시간 위협 탐지 실습 · 미션 포털</title>
+<style>
+  :root{--navy:#122a4a;--blue:#1f5fbf;--accent:#0e9f6e;--bg:#eef2f7;--card:#fff;
+    --line:#d7dee8;--text:#1c2733;--mut:#5b6b7c;--ok:#0e9f6e;--no:#c0392b;--warn:#b8842a;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Malgun Gothic","맑은 고딕",-apple-system,"Segoe UI","Apple SD Gothic Neo",sans-serif;
+    background:var(--bg);color:var(--text)}
+  a{color:var(--blue);text-decoration:none}
+  .top{background:var(--navy);color:#fff;padding:11px 20px;display:flex;align-items:center;
+    justify-content:space-between;position:sticky;top:0;z-index:20}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700}
+  .brand .mk{width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,var(--blue),var(--accent));
+    display:flex;align-items:center;justify-content:center;font-size:14px}
+  .brand small{font-weight:400;opacity:.7;margin-left:4px}
+  .top .right{display:flex;align-items:center;gap:14px;font-size:14px}
+  .top .right b{font-size:16px}
+  .btn{border:0;border-radius:8px;padding:8px 13px;font-size:13px;font-weight:600;cursor:pointer;background:var(--blue);color:#fff}
+  .btn.ghost{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35)}
+  .btn.sm{padding:6px 10px;font-size:12px}
+  .wrap{max-width:920px;margin:20px auto;padding:0 16px}
+  /* login */
+  .login{max-width:440px;margin:8vh auto;background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:30px 28px;text-align:center}
+  .login h1{font-size:20px;margin:0 0 6px}
+  .login p{color:var(--mut);font-size:14px;margin:0 0 18px}
+  .login input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:9px;font-size:15px;margin-bottom:12px}
+  .login .btn{width:100%;padding:12px}
+  /* progress */
+  .bar{height:10px;background:#dfe6ef;border-radius:6px;overflow:hidden;margin:4px 0}
+  .bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--accent));width:0}
+  .sumcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:16px}
+  .sumrow{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
+  .sumrow .stat b{font-size:22px;color:var(--navy)} .sumrow .stat span{font-size:12px;color:var(--mut)}
+  .secttl{font-size:15px;font-weight:700;margin:22px 4px 10px;display:flex;align-items:center;gap:8px}
+  .secttl .tag{font-size:11px;background:var(--blue);color:#fff;border-radius:5px;padding:2px 7px}
+  .secttl .tag.b{background:var(--warn)}
+  /* question card */
+  .q{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:15px 17px;margin-bottom:12px}
+  .q.solved{border-color:var(--ok);background:#f2fbf7}
+  .q.manualdone{border-color:var(--warn);background:#fdf8ef}
+  .qh{display:flex;gap:9px;align-items:flex-start}
+  .qno{flex:none;width:30px;height:30px;border-radius:8px;background:var(--navy);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+  .qbody{flex:1;min-width:0}
+  .badges{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 7px}
+  .badges span{font-size:11px;border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:var(--mut)}
+  .badges .sc{border-color:var(--blue);color:var(--blue)}
+  .badges .man{border-color:var(--warn);color:var(--warn)}
+  .badges .disc{border-color:#8e44ad;color:#8e44ad}
+  .qtext{font-size:15px;font-weight:600;line-height:1.5;margin-bottom:9px}
+  .hint{background:#f4f8ff;border:1px solid #dce8fb;border-radius:8px;padding:8px 10px;font-size:12.5px;color:#324;margin-bottom:9px}
+  .hint code{background:#e6efff;border-radius:4px;padding:1px 5px;font-family:Consolas,monospace;cursor:pointer}
+  .hint .cp{float:right;font-size:11px;color:var(--blue);cursor:pointer}
+  .ansrow{display:flex;gap:8px}
+  .ansrow input{flex:1;padding:9px 11px;border:1px solid var(--line);border-radius:8px;font-size:14px}
+  .fb{font-size:13px;margin-top:8px;font-weight:600;min-height:18px}
+  .fb.ok{color:var(--ok)} .fb.no{color:var(--no)} .fb.man{color:var(--warn)}
+  .lb{position:fixed;right:16px;bottom:16px;width:250px;background:var(--card);border:1px solid var(--line);
+    border-radius:12px;padding:12px 14px;box-shadow:0 6px 24px rgba(0,0,0,.12);display:none}
+  .lb h4{margin:0 0 8px;font-size:13px} .lb ol{margin:0;padding-left:18px;font-size:13px}
+  .lb li{padding:2px 0;display:flex;justify-content:space-between}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+  <div class="top">
+    <div class="brand"><span class="mk">B</span>브릿지웍스 보안실습 <small>미션 포털</small></div>
+    <div class="right" id="topright"></div>
+  </div>
+
+  <!-- 로그인 -->
+  <div id="loginView" class="login">
+    <h1>실시간 위협 탐지 · 미션</h1>
+    <p>조 이름(또는 이름)을 입력하고 시작하세요.<br>Wazuh에서 로그를 분석해 답을 찾아 제출합니다.</p>
+    <input id="teamInput" placeholder="예: 1조 / 홍길동" maxlength="40" autocomplete="off">
+    <button class="btn" id="startBtn">시작하기</button>
+  </div>
+
+  <!-- 미션 -->
+  <div id="missionView" class="wrap hidden">
+    <div class="sumcard">
+      <div class="sumrow">
+        <div class="stat"><b id="stScore">0</b><span> 점 (자동채점)</span></div>
+        <div class="stat"><b id="stSolved">0</b><span> 문항 해결</span></div>
+        <div style="flex:1;min-width:180px">
+          <div style="font-size:12px;color:var(--mut);margin-bottom:2px">필수 진행률 <span id="reqPct">0%</span></div>
+          <div class="bar"><i id="reqBar"></i></div>
+        </div>
+        <a class="btn ghost sm" id="wazuhBtn" target="_blank" style="color:#fff;background:var(--navy)">Wazuh 열기</a>
+      </div>
+    </div>
+    <div id="reqWrap"></div>
+    <div id="bonWrap"></div>
+  </div>
+
+  <div class="lb" id="lbBox"><h4>리더보드</h4><ol id="lbList"></ol></div>
+
+<script>
+const $ = s => document.querySelector(s);
+let CFG = {}, QS = [];
+
+async function jget(u){ const r = await fetch(u); return r.json(); }
+async function jpost(u,b){ const r = await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})}); return r.json(); }
+
+function esc(s){ return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+async function boot(){
+  CFG = await jget('/api/config');
+  if (CFG.team){ enterMission(); } else { $('#loginView').classList.remove('hidden'); $('#missionView').classList.add('hidden'); }
+}
+$('#startBtn').onclick = async () => {
+  const t = $('#teamInput').value.trim();
+  if(!t) return;
+  const r = await jpost('/api/login',{team:t});
+  if(r.team){ CFG.team=r.team; enterMission(); }
+};
+$('#teamInput')?.addEventListener('keydown',e=>{ if(e.key==='Enter') $('#startBtn').click(); });
+
+function enterMission(){
+  $('#loginView').classList.add('hidden');
+  $('#missionView').classList.remove('hidden');
+  const wz = CFG.wazuh_url || ('https://'+location.hostname);
+  $('#wazuhBtn').href = wz;
+  $('#topright').innerHTML =
+    `<span>👥 <b>${esc(CFG.team)}</b></span>
+     <button class="btn ghost sm" id="lbBtn">리더보드</button>
+     <button class="btn ghost sm" id="logoutBtn">나가기</button>`;
+  $('#lbBtn').onclick = toggleLB;
+  $('#logoutBtn').onclick = async()=>{ await jpost('/api/logout'); location.reload(); };
+  loadQuestions();
+}
+
+function badge(q){
+  let b = `<span class="sc">${q.score}점</span><span>${q.type}</span><span>난이도 ${q.diff}</span><span>SL ${q.sl}</span>`;
+  if(!q.auto) b += `<span class="man">강사채점</span>`;
+  if(q.discuss) b += `<span class="disc">🗣️조별토의</span>`;
+  return b;
+}
+
+function qCard(q){
+  const st = q.state;
+  const solved = st && st.status==='correct';
+  const mandone = st && (st.status==='manual'||st.status==='graded');
+  const cls = solved?'q solved':(mandone?'q manualdone':'q');
+  const val = st? esc(st.answer):'';
+  const fb = solved ? `<div class="fb ok">✓ 정답 · +${st.score}점</div>`
+           : (st&&st.status==='graded') ? `<div class="fb man">✓ 채점 완료 · ${st.score}점</div>`
+           : (st&&st.status==='manual') ? `<div class="fb man">제출됨 · 강사 채점 대기</div>`
+           : (st&&st.status==='wrong') ? `<div class="fb no">✗ 다시 시도해 보세요</div>`
+           : `<div class="fb"></div>`;
+  return `<div class="${cls}" data-qno="${q.qno}">
+    <div class="qh"><div class="qno">${q.qno}</div><div class="qbody">
+      <div class="badges">${badge(q)}</div>
+      <div class="qtext">${esc(q.question)}</div>
+      <div class="hint"><span class="cp" data-copy="${esc(q.wazuh)}">쿼리 복사</span>
+        Wazuh: <code data-copy="${esc(q.wazuh)}">${esc(q.wazuh)}</code><br>
+        <span style="color:var(--mut)">도구: ${esc(q.hint)}</span></div>
+      <div class="ansrow">
+        <input placeholder="답안 입력" value="${val}" ${solved?'disabled':''}>
+        <button class="btn" ${solved?'disabled':''}>제출</button>
+      </div>
+      ${fb}
+    </div></div></div>`;
+}
+
+async function loadQuestions(){
+  const d = await jget('/api/questions');
+  QS = d.questions;
+  const req = QS.filter(q=>q.section==='필수'), bon = QS.filter(q=>q.section==='보너스');
+  $('#reqWrap').innerHTML = `<div class="secttl"><span class="tag">필수</span> 필수 구간 (${req.length}문항) — 먼저 푸세요</div>` + req.map(qCard).join('');
+  $('#bonWrap').innerHTML = `<div class="secttl"><span class="tag b">보너스</span> 보너스 구간 (${bon.length}문항)</div>` + bon.map(qCard).join('');
+  wireCards();
+  updateSummary(d);
+}
+
+function updateSummary(d){
+  const req = QS.filter(q=>q.section==='필수');
+  const reqSolved = req.filter(q=>q.state && (q.state.status==='correct'||q.state.status==='graded'||q.state.status==='manual')).length;
+  const solved = QS.filter(q=>q.state && q.state.status==='correct').length;
+  $('#stScore').textContent = d.score;
+  $('#stSolved').textContent = solved;
+  const pct = Math.round(reqSolved/req.length*100);
+  $('#reqPct').textContent = pct+'%'; $('#reqBar').style.width = pct+'%';
+}
+
+function wireCards(){
+  document.querySelectorAll('.q').forEach(card=>{
+    const qno = +card.dataset.qno;
+    const input = card.querySelector('input'), btn = card.querySelector('button.btn'), fb = card.querySelector('.fb');
+    if(btn) btn.onclick = async ()=>{
+      const answer = input.value.trim(); if(!answer) return;
+      btn.disabled=true;
+      const r = await jpost('/api/submit',{qno,answer});
+      btn.disabled=false;
+      if(r.error){ fb.className='fb no'; fb.textContent=r.error; return; }
+      if(r.status==='correct'){ fb.className='fb ok'; fb.textContent=`✓ 정답 · +${r.score}점`; card.classList.add('solved'); input.disabled=true; btn.disabled=true; }
+      else if(r.status==='manual'){ fb.className='fb man'; fb.textContent='제출됨 · 강사 채점 대기'; card.classList.add('manualdone'); }
+      else { fb.className='fb no'; fb.textContent='✗ 다시 시도해 보세요'; }
+      const d = await jget('/api/questions'); QS=d.questions; updateSummary(d);
+    };
+  });
+  document.querySelectorAll('[data-copy]').forEach(el=>{
+    el.addEventListener('click',()=>{ navigator.clipboard?.writeText(el.dataset.copy); el.textContent='복사됨!'; setTimeout(()=>{ if(el.classList.contains('cp')) el.textContent='쿼리 복사'; },1200); });
+  });
+}
+
+let lbOn=false;
+async function toggleLB(){
+  lbOn=!lbOn; const box=$('#lbBox'); box.style.display=lbOn?'block':'none';
+  if(lbOn){ const d=await jget('/api/leaderboard');
+    $('#lbList').innerHTML = d.board.map(r=>`<li><span>${esc(r.team)}</span><span>${r.score}점 · ${r.solved}✓</span></li>`).join('') || '<li>아직 없음</li>'; }
+}
+
+boot();
+</script>
+</body>
+</html>

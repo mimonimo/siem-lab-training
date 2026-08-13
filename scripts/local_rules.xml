@@ -1,0 +1,74 @@
+<!-- ==========================================================================
+  SIEM Lab custom rules. Installed to /var/ossec/etc/rules/local_rules.xml
+  Descriptions are Korean and beginner-readable so novices can tell at a glance
+  what each alert means. IDs 100100+ (local range).
+  ========================================================================== -->
+<group name="siem_lab,">
+
+  <!-- ===== 웹 접근 로그 (Apache access.log) ===== -->
+
+  <!-- 웹셸 명령 실행 시도: URL에 cmd= 파라미터 (스토리라인 A/E) -->
+  <rule id="100101" level="12">
+    <if_sid>31100</if_sid>
+    <url>cmd=</url>
+    <description>웹셸 명령 실행 시도 (URL에 cmd= 파라미터 포함)</description>
+    <mitre><id>T1505.003</id></mitre>
+    <group>attack,web,webshell,siem_lab,</group>
+  </rule>
+
+  <!-- 웹 취약점 스캐너: sqlmap 계열 User-Agent (스토리라인 C, 미끼) -->
+  <rule id="100102" level="9">
+    <if_sid>31100</if_sid>
+    <match>sqlmap</match>
+    <description>웹 취약점 스캐너 트래픽 탐지 (sqlmap User-Agent)</description>
+    <mitre><id>T1595</id></mitre>
+    <group>recon,web,siem_lab,</group>
+  </rule>
+
+  <!-- 짧은 간격 반복 요청: 동일 출발지 다수 요청 (flood/스캔) -->
+  <rule id="100103" level="10" frequency="10" timeframe="30">
+    <if_matched_sid>31100</if_matched_sid>
+    <same_source_ip />
+    <description>짧은 간격 반복 웹 요청 (동일 IP, 스캔/flood 의심)</description>
+    <group>web,flood,siem_lab,</group>
+  </rule>
+
+  <!-- ===== auditd (프로세스 실행/무결성) ===== -->
+
+  <!-- 웹서비스 계정(www-data)의 프로세스 실행 = 웹셸 경유 명령 -->
+  <rule id="100110" level="12">
+    <if_group>audit</if_group>
+    <field name="audit.key">^webshell_exec$</field>
+    <description>웹서비스 계정의 프로세스 실행 - 웹셸 경유 명령 의심</description>
+    <mitre><id>T1059</id></mitre>
+    <group>audit,attack,webshell,siem_lab,</group>
+  </rule>
+
+  <!-- sudoers.d 변경 = 권한 상승 (스토리라인 B) -->
+  <rule id="100111" level="12">
+    <if_group>audit</if_group>
+    <field name="audit.key">^priv_esc$</field>
+    <description>sudoers.d 파일 변경 - 권한 상승 시도</description>
+    <mitre><id>T1548.003</id></mitre>
+    <group>audit,privilege_escalation,siem_lab,</group>
+  </rule>
+
+  <!-- cron 지속성 등록 (스토리라인 A) -->
+  <rule id="100112" level="10">
+    <if_group>audit</if_group>
+    <field name="audit.key">^cron_persist$</field>
+    <description>cron 항목 변경 - 재부팅 지속성(persistence) 의심</description>
+    <mitre><id>T1053.003</id></mitre>
+    <group>audit,persistence,siem_lab,</group>
+  </rule>
+
+  <!-- 시스템 바이너리 디렉터리 변조 (스토리라인 A) -->
+  <rule id="100113" level="12">
+    <if_group>audit</if_group>
+    <field name="audit.key">^bin_tamper$</field>
+    <description>시스템 바이너리 디렉터리(/usr/bin) 변조 감지</description>
+    <mitre><id>T1036.005</id></mitre>
+    <group>audit,integrity,siem_lab,</group>
+  </rule>
+
+</group>
