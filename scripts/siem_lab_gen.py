@@ -144,8 +144,13 @@ def add_diverse_logs(err, ufw, mail):
         ("core:info", "AH00128: File does not exist: /var/www/html/favicon.ico"),
         ("core:info", "AH00128: File does not exist: /var/www/html/apple-touch-icon.png"),
         ("authz_core:error", "AH01630: client denied by server configuration: /var/www/html/.htpasswd"),
+        ("php:notice", "PHP Notice:  Trying to access array offset on value of type null in /var/www/html/lib/view.php on line 88"),
+        ("php:warn",  "PHP Warning:  session_start(): Failed to read session data in /var/www/html/auth.php on line 12"),
+        ("core:info", "AH00128: File does not exist: /var/www/html/robots.txt.bak"),
+        ("proxy:error", "AH01114: HTTP: failed to make connection to backend: 127.0.0.1"),
+        ("core:warn", "AH00558: apache2: Could not reliably determine the server's fully qualified domain name"),
     ]
-    for _ in range(42):
+    for _ in range(80):
         off = -random.randint(0, 24*3600)
         lvl, msg = random.choice(emsgs)
         err.emit(off, line_aerror(t(off), lvl, random.randint(1000, 3000), rand_client_ip(), msg))
@@ -163,17 +168,21 @@ def add_diverse_logs(err, ufw, mail):
     for i in range(6):
         off = -8*3600 - 200 + i*4
         ufw.emit(off, line_ufw(t(off), ACTORS["attacker_main"], 22))
-    for _ in range(22):     # background internet noise blocked at the edge
+    for _ in range(40):     # background internet noise blocked at the edge
         off = -random.randint(0, 24*3600)
-        ufw.emit(off, line_ufw(t(off), f"203.0.113.{random.randint(2,250)}",
-                 random.choice([23, 2323, 5900, 1433, 8443, 3389])))
+        src = random.choice([f"203.0.113.{random.randint(2,250)}",
+                             f"198.18.{random.randint(0,255)}.{random.randint(2,250)}",
+                             f"185.220.{random.randint(100,120)}.{random.randint(2,250)}"])
+        ufw.emit(off, line_ufw(t(off), src,
+                 random.choice([23, 2323, 5900, 1433, 8443, 3389, 445, 22, 3306, 6379])))
 
     # --- postfix mail.log: normal corporate mail flow -------------------------
-    for i in range(26):
+    for i in range(50):
         off = -random.randint(0, 24*3600)
         pid = random.randint(1000, 9000)
         qid = f"{random.randint(0x100000,0xFFFFFF):06X}"
-        sender = random.choice(["hr", "it-helpdesk", "noreply", "payroll", "notice"])
+        sender = random.choice(["hr", "it-helpdesk", "noreply", "payroll", "notice",
+                                "recruiting", "finance", "ceo-office", "security-team"])
         mail.emit(off,   line_mail(t(off),   f"smtpd[{pid}]: connect from mail-relay.example.com[203.0.113.{random.randint(2,60)}]"))
         mail.emit(off+1, line_mail(t(off+1), f"qmgr[{pid}]: {qid}: from=<{sender}@bridgeworks.local>, size={random.randint(2000,90000)}, nrcpt=1 (queue active)"))
         mail.emit(off+2, line_mail(t(off+2), f"smtp[{pid}]: {qid}: to=<staff{random.randint(1,40)}@bridgeworks.local>, relay=local, delay={random.uniform(0.1,2.0):.2f}, status=sent (delivered to mailbox)"))
@@ -212,6 +221,20 @@ NORMAL_PATHS = [
     "/api/v1/attendance/today", "/api/v1/approval/count", "/docs/", "/docs/guide.html",
     "/docs/security-policy.pdf", "/robots.txt", "/sitemap.xml", "/help/faq",
     "/search?q=%ED%9C%B4%EA%B0%80%EC%8B%A0%EC%B2%AD", "/search?q=%EC%A1%B0%EC%A7%81%EB%8F%84",
+    # --- broader intranet surface (variety so browsing is real needle-in-haystack) ---
+    "/portal/board/notice", "/portal/board/qna", "/portal/board/qna/write",
+    "/portal/calendar", "/portal/calendar/2026-08", "/portal/meeting/rooms",
+    "/portal/meeting/reserve", "/portal/expense", "/portal/expense/new",
+    "/portal/assets", "/portal/assets/loan", "/portal/wiki", "/portal/wiki/onboarding",
+    "/portal/wiki/security", "/portal/survey/2026-q3", "/portal/org/chart",
+    "/api/v1/notices/12841", "/api/v1/board/free?page=2", "/api/v1/calendar/events",
+    "/api/v1/messenger/unread", "/api/v1/drive/quota", "/api/v1/expense/pending",
+    "/api/v1/assets/mine", "/api/v2/auth/refresh", "/api/v2/user/preferences",
+    "/css/portal.css", "/css/board.css", "/js/portal.bundle.js", "/js/editor.min.js",
+    "/js/calendar.js", "/fonts/pretendard.woff2", "/fonts/notosans.woff2",
+    "/img/avatars/u1042.png", "/img/avatars/u2381.png", "/img/thumb/notice-0812.png",
+    "/downloads/manual-2026.pdf", "/downloads/holiday-2026.pdf", "/help/shortcuts",
+    "/health", "/metrics", "/api/status", "/portal/logout",
 ]
 NORMAL_UA = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
@@ -222,6 +245,10 @@ NORMAL_UA = [
     "Mozilla/5.0 (Linux; Android 14; SM-S911N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36",
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+    "kube-probe/1.28", "ELB-HealthChecker/2.0", "Prometheus/2.51.0",
+    "Mozilla/5.0 (compatible; UptimeRobot/2.0; http://uptimerobot.com/)",
 ]
 NORMAL_REFERERS = [
     "-", "-", "-",
@@ -253,25 +280,35 @@ def add_benign_background(auth, cron):
             "/usr/lib/sysstat/debian-sa1 1 1",
             "( cd / && run-parts --report /etc/cron.daily )",
             "/usr/bin/certbot renew -q", "/opt/monitoring/healthcheck.sh",
-            "/usr/bin/find /tmp -type f -atime +7 -delete"]
-    for i in range(28):
+            "/usr/bin/find /tmp -type f -atime +7 -delete",
+            "/opt/backup/db-dump.sh --incremental", "/usr/bin/apt-get -qq update",
+            "/opt/deploy/collect-metrics.sh", "/usr/bin/php /var/www/html/cron/mailer.php",
+            "/usr/local/bin/rsync-nightly.sh", "/usr/bin/updatedb"]
+    for i in range(52):
         off = -random.randint(0, 24*3600)
         cron.emit(off, line_cron_run(t(off), 30000+i,
-                  random.choice(["root","root","root","www-data"]), random.choice(jobs)))
-    for i in range(7):
+                  random.choice(["root","root","root","www-data","backupsvc"]), random.choice(jobs)))
+    admin_cmds = ["/usr/bin/apt-get update", "/usr/bin/systemctl status apache2",
+                  "/usr/bin/tail -n 100 /var/log/syslog", "/usr/bin/journalctl -u ssh",
+                  "/usr/bin/systemctl restart nginx", "/usr/bin/docker ps",
+                  "/usr/bin/du -sh /var/www", "/usr/bin/vi /etc/hosts",
+                  "/usr/bin/systemctl status wazuh-agent", "/bin/cat /var/log/dpkg.log"]
+    for i in range(16):
         off = -random.randint(2*3600, 20*3600)
-        cmd = random.choice(["/usr/bin/apt-get update", "/usr/bin/systemctl status apache2",
-                             "/usr/bin/tail -n 100 /var/log/syslog", "/usr/bin/journalctl -u ssh"])
-        auth.emit(off, line_sudo(t(off), 40000+i, ACCOUNTS["sysadmin"], "pts/2",
-                  f"/home/{ACCOUNTS['sysadmin']}", "root", cmd))
+        u = random.choice([ACCOUNTS["sysadmin"], ACCOUNTS["sysadmin"], "dbadmin"])
+        auth.emit(off, line_sudo(t(off), 40000+i, u, "pts/2",
+                  f"/home/{u}", "root", random.choice(admin_cmds)))
 
 def add_normal_ssh(auth, count):
-    """A few benign SSH logins (different accounts, different times)."""
-    users = [ACCOUNTS["sysadmin"], "backupsvc", ACCOUNTS["victim"]]
+    """Benign SSH logins (varied accounts / workstations / times). Source IPs
+    exclude every storyline actor address so noise never collides with a clue."""
+    users = [ACCOUNTS["sysadmin"], "backupsvc", ACCOUNTS["victim"], "deploybot",
+             "jenkins", "dbadmin", "monitoring", "helpdesk"]
+    # workstation pool in .60-.95 (admin_lan .50 and attacker subnets excluded)
     for i in range(count):
         off = -random.randint(2*3600, 22*3600)
         u = users[i % len(users)]
-        ip = f"192.168.208.{random.randint(20, 90)}"
+        ip = f"192.168.208.{random.randint(60, 95)}"
         pid = random.randint(1200, 9000)
         port = random.randint(40000, 60000)
         auth.emit(off,     line_sshd_accept(t(off), pid, u, ip, port))
@@ -477,9 +514,10 @@ def storyline_B(af, auth, cron, audit, steps):
     steps.append(dict(id="B1", sl="B",
         desc="야간 sudoers.d 백도어 등록 (NOPASSWD 권한 상승)",
         detail="/etc/sudoers.d/webadmin 생성 — A와 동일 공격자 세션(권한 상승 단계)",
-        off=T, token="tee /etc/sudoers.d/webadmin"))
+        off=T, token="webadmin ALL=(ALL) NOPASSWD:ALL >> /etc/sudoers.d/webadmin"))
     auth.emit(T, line_sudo(t(T), 22200, vic, "pts/0", f"/home/{vic}", "root",
-              "/usr/bin/tee /etc/sudoers.d/webadmin"), event_id="B1")
+              "/bin/bash -c echo 'webadmin ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers.d/webadmin"),
+              event_id="B1")
     for l in audit_event(t(T), 35000, "tee", "/usr/bin/tee",
                          ["tee", "/etc/sudoers.d/webadmin"], uid=0, auid=1001,
                          key="priv_esc"):
@@ -637,9 +675,9 @@ def main():
     present = ["A", "B", "C", "D", "E", "F"]
 
     # ---- normal noise (rich background so analysis has real volume) ---------
-    normal_access = int(os.environ.get("SIEM_LAB_NORMAL_ACCESS", "650"))
+    normal_access = int(os.environ.get("SIEM_LAB_NORMAL_ACCESS", "1400"))
     add_normal_access(af, normal_access)
-    add_normal_ssh(auth, 16)
+    add_normal_ssh(auth, 40)
     add_benign_background(auth, cron)
     add_diverse_logs(err, ufw, mail)
 

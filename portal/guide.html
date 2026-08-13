@@ -217,7 +217,7 @@ Aug 13 04:38:05 siem sshd[22004]: <span class="hl2">Failed password</span> for i
       <ol class="steps">
         <li><b>기점 잡기</b> — 인증 로그에서 "다수 실패 후 성공"을 찾아 최초 침투 시각·IP·계정을 확정합니다. <div class="q">data.srcip:"198.51.100.23" and rule.groups:authentication_success</div></li>
         <li><b>피벗(pivot)</b> — 그 IP/계정을 필터해 같은 주체의 다른 행위를 모읍니다. <div class="q">data.srcip:"198.51.100.23"</div></li>
-        <li><b>시간축 연결</b> — 웹셸 배치 → 명령 실행 → 다운로드 → 지속성 → 변조 → 권한상승 → 유출을 시간순으로 잇습니다. (Time 컬럼 오름차순 정렬)</li>
+        <li><b>시간축 연결</b> — 웹셸 배치 → 명령 실행 → 다운로드 → 지속성 → 변조 → 권한상승 → 유출을 시간순으로 잇습니다. <b>각 로그 줄에 찍힌 실제 시각</b>(예: <code>Aug 13 10:11:32</code>, access.log의 <code>[13/Aug/2026:10:16:32]</code>)을 읽어 배열하세요. ※ Discover의 <b>Time 컬럼은 수집(적재) 시각</b>이라 사건 순서와 다를 수 있으니, 순서 판단은 로그 본문의 시각으로 합니다.</li>
         <li><b>교차 확인</b> — access.log의 요청과 audit.log의 프로세스 실행을 같은 시각으로 대조해 "정말 실행됐는지" 확인합니다.</li>
         <li><b>미끼 걸러내기</b> — 이상 로그가 실제 침해로 이어졌는지(성공 응답·후속 행위) 따져 대응 우선순위를 정합니다.</li>
       </ol>
@@ -244,7 +244,8 @@ Aug 13 04:38:05 siem sshd[22004]: <span class="hl2">Failed password</span> for i
         <div><div class="q">data.srcip:"198.51.100.23"</div><div class="q">full_log:"search.php"</div><div class="q">rule.id:100101</div></div>
         <div><div class="q">full_log:"webshell_exec"</div><div class="q">data.dstuser:"root"</div><div class="q">location:"/var/log/ufw.log"</div></div>
       </div>
-      <div class="note">🔎 검색은 <b>필드:값</b> 형식입니다. 문자열은 <code>full_log:"..."</code>, IP·계정은 <code>data.srcip:"..."</code>·<code>data.dstuser:"..."</code>, 여러 조건은 <code>and</code>/<code>or</code>로 연결합니다.</div>
+      <div class="note">🔎 검색은 <b>필드:값</b> 형식입니다. 문자열은 <code>full_log:"..."</code>, IP·계정은 <code>data.srcip:"..."</code>·<code>data.dstuser:"..."</code>, 여러 조건은 <code>and</code>/<code>or</code>로 연결합니다.<br>
+      ⚠️ <b>대문자·특수문자(:)</b>가 든 값은 따옴표 검색이 안 걸릴 수 있습니다. 이럴 땐 <b>와일드카드</b>를 쓰세요 — 예: <code>full_log:*NOPASSWD*</code>.</div>
     </div>
 
     <!-- 7. 탐지 룰 -->

@@ -9,8 +9,8 @@ Wazuh SIEM 기반 침해 로그 분석 CTF 실습 환경입니다. 서버 1대�
 |---|---|---|---|
 | **학생 미션 포털** | `http://<IP>:8081/` | 문제 풀이(자동채점·힌트·단계해금) | user_1..N / 비번=아이디 |
 | **교안(courseware)** | `http://<IP>:8081/guide` | 구성도·시나리오·방법론·주의점 | 공개(학생/강사) |
-| **강사 콘솔** | `http://<IP>:8081/instructor` | 해설·제출채점·해금관리 | 패스코드 `bridgeworks-instructor` |
-| **Wazuh 대시보드** | `https://<IP>/` (443) | 로그 분석/탐지 | admin / (설치 시 발급) |
+| **강사 콘솔** | `http://<IP>:8081/instructor` | 해설·제출채점·해금관리 | 포털에서 **admin / p@ssw0rd** 로그인 → "강사 콘솔" 버튼 (또는 패스코드 `bridgeworks-instructor`) |
+| **Wazuh 대시보드** | `https://<IP>/` (443) | 로그 분석/탐지 | admin / (설치 시 발급, 포털 상단에도 표시) |
 | 라이브 데모 | `http://<IP>:8080/` | 버튼→실시간 탐지 시연 | 없음 |
 | 사전로그 웹서버 | `http://<IP>/` (Apache) | 로그를 채우는 대상 | 없음 |
 
@@ -27,8 +27,9 @@ Wazuh SIEM 기반 침해 로그 분석 CTF 실습 환경입니다. 서버 1대�
 3. 포털에 답 제출 → 자동채점 + 점수/진행률. 막히면 힌트(소폭 감점), 오답은 감점.
 - **단계 해금**: 1단계(Q1~10)→2단계(Q11~20)→3단계(보너스). 이전 단계 60% 완료 시 자동 해금. 찍기·건너뛰기 방지.
 
-## 4. 강사 콘솔 (/instructor, 패스코드)
-- **📘 문제 풀이 해설**: 36문항 정답·근거·조회쿼리·힌트·채점방식.
+## 4. 강사 콘솔 (/instructor)
+- **접속**: 포털에서 `admin` / `p@ssw0rd` 로 로그인하면 헤더에 "강사 콘솔" 버튼이 생깁니다(별도 URL·패스코드 암기 불필요).
+- **📘 문제 풀이 해설**: 36문항 정답·근거·조회쿼리·힌트·채점방식 + 풀이 단계/분석 관점.
 - **📊 제출 현황·채점**: 학생별 제출·점수·리더보드, 판단형(수동) 채점.
 - **🔓 해금 관리**: 학생별 현재 단계 확인 + 강제 해금(오버라이드). 자동해금 임계치 60%.
 
@@ -38,9 +39,14 @@ Wazuh SIEM 기반 침해 로그 분석 CTF 실습 환경입니다. 서버 1대�
 
 ## 6. 로그 소스 (7종) + 지속 생성
 `access.log·error.log·auth.log·audit/audit.log·cron.log·ufw.log·mail.log`
+- 정상 트래픽 대량(웹 접근 ~1,400줄 등) + 이상 로그 소수를 섞어 **needle-in-haystack** 난이도. 클린 재빌드 시 archives ≈ 2,200건.
 - `siem-livelog` 서비스가 90초마다 정상 로그를 계속 append → 데이터가 쌓이고 live하게 유지.
-- Wazuh Discover 저장검색: **🚨 탐지 알림 / 🌐 웹 접근 / 🔐 인증 / 🧱 방화벽 / 🔎 전체 원문**.
-  노이즈 필드(hipaa/pci/audit 상세)는 숨김 처리됨.
+- **인덱스 패턴 3개**: `wazuh-archives-*`(전체 로그=정상+이상) · `wazuh-alerts-*`(탐지 알림) · `wazuh-alerts-*,wazuh-archives-*`(통합, 한 번에 보기·난이도↑).
+- Wazuh Discover 저장검색: **🚨 탐지 알림 / 🧩 전체 로그 / 🌐 웹 접근 / 🔐 인증 / 🧱 방화벽**.
+
+### 분석 팁 (학생 안내용)
+- **Discover의 Time 컬럼 = 수집(적재) 시각**. 사건 순서는 로그 본문의 실제 시각(예: `Aug 13 10:11:32`)으로 판단. 시간 범위는 **Last 1 year**.
+- **대문자·특수문자(:)가 든 값**(예: `NOPASSWD:ALL`)은 따옴표 검색이 안 걸릴 수 있음 → 와일드카드 `full_log:*NOPASSWD*` 사용.
 
 ## 7. 파일 위치 (`/opt/siem-lab/`)
 | 항목 | 경로 |
@@ -55,10 +61,13 @@ Wazuh SIEM 기반 침해 로그 분석 CTF 실습 환경입니다. 서버 1대�
 
 ## 8. 재빌드 / 검증 (필요 시)
 ```
-sudo bash /opt/siem-lab/scripts/90_finalize_dataset.sh   # 로그 재생성+Wazuh 클린적재+미션뱅크+포털 갱신
-sudo python3 /opt/siem-lab/scripts/verify_hints.py       # 힌트 쿼리 전수 검증
-sudo python3 /opt/siem-lab/scripts/config_dashboard.py   # 대시보드 필드정리+저장검색 재설정
+sudo bash /opt/siem-lab/scripts/90_finalize_dataset.sh   # 로그 재생성+Wazuh 클린적재+미션뱅크+포털 갱신 (약 3~4분)
+sudo python3 /opt/siem-lab/scripts/verify_hints.py       # 힌트 쿼리 전수 검증 (Q32는 라이브데모 전용이라 0건이 정상)
+sudo python3 /opt/siem-lab/scripts/verify_solve.py       # 실제 풀이 검증(정답이 조회로 찾아지는지)
+sudo python3 /opt/siem-lab/scripts/config_dashboard.py   # 인덱스패턴 3개+저장검색 재설정, 중복/내부패턴 정리
 ```
+- 재빌드는 대량 로그를 **청크로 나눠 천천히 적재**합니다(로그수집기→분석엔진 큐 1024 한계 초과 시 유실 방지). 다른 서버로 옮겨 재빌드해도 전량 적재됩니다.
+- MISS로 보이는 소수 문항(공격 지속시간=시각 계산, 로그소스 나열=location 필드, 데모 문항)은 **설계상 파생답**으로 정상입니다.
 
 ## 9. 배포/이관
 - 이 환경은 GitHub 스크립트로 **다른 서버에서 통째로 재빌드** 가능(README의 `build_all.sh`).

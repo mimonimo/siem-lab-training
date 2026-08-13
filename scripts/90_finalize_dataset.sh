@@ -25,7 +25,18 @@ q -X DELETE "$ES/wazuh-alerts-*"   >/dev/null; q -X DELETE "$ES/wazuh-archives-*
 : > /var/ossec/logs/archives/archives.json 2>/dev/null || true
 systemctl restart wazuh-manager
 sleep 25
-for f in $FILES; do cat "/tmp/ds/$(echo "$f" | tr / _)" >> "$f"; done
+# Feed logs in throttled chunks: the logcollector->analysisd message queue caps
+# at ~1024 and a single big append burst overflows it (lines silently lost).
+# Chunking with short pauses lets the queue drain so EVERY line is ingested.
+CHUNK=200
+for f in $FILES; do
+  src="/tmp/ds/$(echo "$f" | tr / _)"
+  [ -s "$src" ] || continue
+  rm -f /tmp/ds/chunk_*
+  split -l "$CHUNK" "$src" /tmp/ds/chunk_
+  for c in /tmp/ds/chunk_*; do cat "$c" >> "$f"; sleep 2; done
+done
+rm -f /tmp/ds/chunk_*
 chown root:adm /var/log/apache2/access.log /var/log/apache2/error.log /var/log/audit/audit.log
 chown syslog:adm /var/log/auth.log /var/log/cron.log /var/log/ufw.log /var/log/mail.log
 chmod 640 $FILES
@@ -42,7 +53,7 @@ if [ -d /opt/siem-lab/portal ]; then
 fi
 
 echo "### [4/5] wait for ingest"
-sleep 55
+sleep 75
 
 echo "### [5/5] verify"
 echo "  alerts:   $(q "$ES/wazuh-alerts-*/_count"   | jq -r '.count//0')"
