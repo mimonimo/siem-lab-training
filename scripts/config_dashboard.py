@@ -26,23 +26,32 @@ def fields_for(title):
                     + "&meta_fields=_source&meta_fields=_id&meta_fields=_index&meta_fields=_score")
     return ff.get("fields")
 
-# 1) index patterns WITH refreshed field cache (empty cache => Discover shows nothing)
-PATTERNS = [("wazuh-alerts-star", "wazuh-alerts-*"),
+def qid(s): return urllib.parse.quote(s, safe="")
+
+# 1) index patterns WITH refreshed field cache (empty cache => Discover shows nothing).
+#    Use the Wazuh-default alerts pattern id ("wazuh-alerts-*") — do NOT create a
+#    second alerts pattern (that caused a duplicate in the picker).
+PATTERNS = [("wazuh-alerts-*", "wazuh-alerts-*"),
             ("wazuh-archives-star", "wazuh-archives-*"),
             ("wazuh-all", "wazuh-alerts-*,wazuh-archives-*")]   # combined = 모든 로그 한 번에
 for pid, title in PATTERNS:
     f = fields_for(title) or []
-    r = api("POST", f"/api/saved_objects/index-pattern/{pid}?overwrite=true",
+    r = api("POST", f"/api/saved_objects/index-pattern/{qid(pid)}?overwrite=true",
             {"attributes": {"title": title, "timeFieldName": "timestamp",
                             "fields": json.dumps(f)}})
     print(f"index-pattern {title}: {len(f)} fields", "OK" if "__err" not in r else r)
+
+# 1b) remove clutter/duplicates from the picker: my old duplicate + Wazuh internals
+for junk in ["wazuh-alerts-star", "wazuh-monitoring-*", "wazuh-statistics-*"]:
+    r = api("DELETE", f"/api/saved_objects/index-pattern/{qid(junk)}?force=true")
+    print(f"  removed pattern {junk}:", "ok" if "__err" not in r else f"(none: {r.get('__err')})")
 
 # 2) tidy per-log-type saved searches (curated columns)
 def src(query):
     return json.dumps({"query": {"query": query, "language": "kuery"}, "filter": [],
                        "indexRefName": "kibanaSavedObjectMeta.searchSourceJSON.index"})
 SEARCHES = [
- ("siemlab-alerts", "🚨 탐지 알림", "wazuh-alerts-star",
+ ("siemlab-alerts", "🚨 탐지 알림", "wazuh-alerts-*",
   ["rule.level","rule.description","data.srcip","data.srcuser","location","full_log"], ""),
  ("siemlab-all", "🧩 전체 로그 (정상+이상)", "wazuh-archives-star",
   ["location","data.srcip","full_log"], ""),
