@@ -35,6 +35,14 @@ EOF
   chmod 600 "$P/portal.env"
 fi
 
+# always sync Wazuh creds into portal.env (so students see them on the portal)
+WPW=$(grep -oP 'Password:\s*\K.+' /opt/siem-lab/logs/wazuh-install.log 2>/dev/null | tail -1 | tr -d ' \r')
+grep -q '^PORTAL_WAZUH_USER=' "$P/portal.env" || echo "PORTAL_WAZUH_USER=admin" >> "$P/portal.env"
+if [ -n "$WPW" ]; then
+  sed -i '/^PORTAL_WAZUH_PASS=/d' "$P/portal.env"
+  echo "PORTAL_WAZUH_PASS=$WPW" >> "$P/portal.env"
+fi
+
 cat > /etc/systemd/system/siem-portal.service <<'UNIT'
 [Unit]
 Description=SIEM Lab student mission portal (Flask)

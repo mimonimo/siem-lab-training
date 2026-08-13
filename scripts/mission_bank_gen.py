@@ -67,9 +67,9 @@ Q = [
  dict(sec="필수", typ="판단", sl="A", diff="중", score=4,
    q="/usr/bin/backup 를 `strings`로 조사했을 때 드러나는 공격 흔적 문자열을 2개 이상 쓰시오.",
    a="connect-back 198.51.100.47:4444 / setuid: unable to set uid to 0 / /tmp/.cache/kworker / /root/.ssh/authorized_keys (2개 이상)",
-   ev="strings /usr/bin/backup",
-   wz="(호스트 명령) strings /usr/bin/backup",
-   tool="strings /usr/bin/backup"),
+   ev="strings /usr/bin/backup · Wazuh: full_log 에서 kworker / 198.51.100.47 확인 가능",
+   wz='full_log:"kworker" or full_log:"198.51.100.47"',
+   tool="Wazuh full_log 에서 kworker·198.51.100.47 확인 (또는 호스트 strings /usr/bin/backup)"),
  dict(sec="필수", typ="직접조회", sl="B", diff="중", score=4,
    q="공격자가 권한 상승(NOPASSWD)을 위해 생성한 파일의 경로는?",
    a="/etc/sudoers.d/webadmin",
@@ -138,7 +138,7 @@ Q = [
    a="① 198.51.100.23 (공격자 본체), ⑤ 198.51.100.47 (2차 hop·유출 목적지). "
      "② 스캐너 미끼, ③ 정상 관리자, ④ 잠긴 실패(방어 성공)는 대응 불필요.",
    ev="A/E vs C/D/F 종합",
-   wz='각 IP를 data.srcip 로 조회해 성공/침해 여부 비교',
+   wz='data.srcip:"198.51.100.23" or full_log:"198.51.100.47"',
    tool="다섯 IP 각각의 로그를 비교"),
  dict(sec="필수", typ="교차확인", sl="A+D", diff="상", score=6, discuss=True,
    q="야간에 cron을 등록한 두 흐름(webadmin 경유 vs opsadmin)이 있다. 어느 쪽이 악성이고 어느 쪽이 정상인지 구분하고 근거를 쓰시오.",
@@ -226,7 +226,7 @@ Q = [
    q="웹 루트 파일 생성(웹셸 배치)이 auditd에 남긴 감사 키(key)는?",
    a="webroot_write",
    ev=f'audit.log 라인 {S["A2_audit"]["line"]}',
-   wz='(호스트) ausearch -k webroot_write',
+   wz='full_log:"webroot_write"',
    tool="ausearch -k webroot_write"),
  dict(sec="보너스", typ="상관분석", sl="종합", diff="상", score=6, discuss=True,
    q="공격자(198.51.100.23)와 2차 hop(198.51.100.47)의 관계를 로그 근거와 함께 설명하시오.",
@@ -258,8 +258,8 @@ GRADE = {
     2:  ("contains", ["198.51.100.23"]),
     3:  ("contains", ["search.php"]),
     4:  ("word",     ["id", "cmd=id"]),
-    5:  ("contains", ["kworker"]),
-    6:  ("contains", ["kworker"]),
+    5:  ("contains", ["/tmp/.cache/kworker", "kworker"]),
+    6:  ("contains", ["/tmp/.cache/kworker", "kworker"]),
     7:  ("contains", ["/usr/bin/backup"]),
     8:  ("any_n", 2, ["connect-back", "198.51.100.47", "setuid", "authorized_keys", "kworker"]),
     9:  ("contains", ["sudoers.d"]),
@@ -336,16 +336,23 @@ def clean_query(wz):
 # --- expected answer format (reduces input errors) --------------------------- #
 def derive_fmt(g):
     mode = g["mode"]; acc = g.get("accept", [])
-    if mode == "manual": return "서술형 — 판단과 근거를 함께 작성"
-    if acc and re.match(r"^\d{1,2}:\d{2}", acc[0]): return "시각  HH:MM:SS  (예: 04:38:17)"
-    if any(re.match(r"^\d+\.\d+\.\d+\.\d+$", a) for a in acc): return "IP 주소  xxx.xxx.xxx.xxx"
-    if any("/" in a for a in acc): return "경로 또는 파일명  (예: /var/www/html/x 또는 x.php)"
-    if mode == "any_n": return "여러 개 입력 — 쉼표로 구분"
+    a0 = acc[0] if acc else ""
+    if mode == "manual": return "서술형 · 판단과 근거를 함께 작성"
+    if any(re.match(r"^\d+\.\d+\.\d+\.\d+$", a) for a in acc): return "IP 주소 · xxx.xxx.xxx.xxx"
+    if re.match(r"^\d{1,2}:\d{2}", a0): return "시각 · HH:MM:SS  (예: 04:38:17)"
+    if any("/" in a for a in acc): return "경로 · /xxx/xxx/xxx  (예: /tmp/.cache/파일)"
+    if any(("." in a and re.match(r"^[\w.-]+\.\w{1,6}$", a)) for a in acc):
+        return "파일명.확장자 · xxxx.xxx  (예: 이름.php)"
+    if mode == "any_n": return "여러 개 · 쉼표(,)로 구분해 입력"
     if mode == "all":   return "해당 값들을 모두 포함해 입력"
-    return "단어/짧은 답"
+    return "단어 · 짧은 답"
 
+
+DIFF_SCORE = {"하": 10, "중": 15, "상": 20}   # base score by difficulty
 
 def render():
+    for q in Q:                               # scale base scores by difficulty
+        q["score"] = DIFF_SCORE.get(q["diff"], 10)
     req = [q for q in Q if q["sec"] == "필수"]
     bon = [q for q in Q if q["sec"] == "보너스"]
 
@@ -454,7 +461,7 @@ def render():
             "fmt": derive_fmt(g),             # expected answer format (input placeholder)
             "hints": hints,                   # served one-by-one via /api/hint (paid)
             "explain": {"answer": q["a"], "evidence": q["ev"], "wazuh": wzq,
-                        "insight": insight_for(q["sl"])},
+                        "steps": hints, "insight": insight_for(q["sl"])},
             "answer": q["a"],                 # instructor reference
             "grade": g,
         })

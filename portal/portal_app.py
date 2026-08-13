@@ -18,7 +18,11 @@ APP_DIR   = os.path.dirname(os.path.abspath(__file__))
 SPEC_PATH = os.environ.get("PORTAL_SPEC", "/opt/siem-lab/answers/grading_spec.json")
 DB_PATH   = os.environ.get("PORTAL_DB", "/opt/siem-lab/portal/portal.db")
 INSTRUCTOR_KEY = os.environ.get("PORTAL_INSTRUCTOR_KEY", "bridgeworks-instructor")
+INSTRUCTOR_USER = os.environ.get("PORTAL_INSTRUCTOR_USER", "admin")
+INSTRUCTOR_PASS = os.environ.get("PORTAL_INSTRUCTOR_PASS", "p@ssw0rd")
 WAZUH_URL = os.environ.get("PORTAL_WAZUH_URL", "")
+WAZUH_USER = os.environ.get("PORTAL_WAZUH_USER", "admin")
+WAZUH_PASS = os.environ.get("PORTAL_WAZUH_PASS", "")
 
 USER_COUNT = int(os.environ.get("PORTAL_USERS", "20"))
 VALID_USERS = {f"user_{i}" for i in range(1, USER_COUNT + 1)}
@@ -125,8 +129,11 @@ def grade(qno, answer):
     else:                 ok = False
     return "correct" if ok else "wrong"
 
+def hint_cost(hints):
+    # progressive: 1st hint -1, 2nd -2, 3rd -3 ... (scaled by HINT_PENALTY step)
+    return HINT_PENALTY * hints * (hints + 1) // 2
 def final_score(base, wrongs, hints, correct):
-    return max(SCORE_FLOOR, base - wrongs*WRONG_PENALTY - hints*HINT_PENALTY) if correct else 0
+    return max(SCORE_FLOOR, base - wrongs*WRONG_PENALTY - hint_cost(hints)) if correct else 0
 
 # ------------------------------------------------------- client-safe view -- #
 def public_q(q):
@@ -162,7 +169,8 @@ def api_config():
     return jsonify(required=SPEC["required"], bonus=SPEC["bonus"], total=SPEC["total"],
                    max_required=sum(q["score"] for q in SPEC["questions"] if q["section"]=="필수"),
                    max_bonus=sum(q["score"] for q in SPEC["questions"] if q["section"]=="보너스"),
-                   wazuh_url=WAZUH_URL, team=session.get("team"),
+                   wazuh_url=WAZUH_URL, wazuh_user=WAZUH_USER, wazuh_pass=WAZUH_PASS,
+                   team=session.get("team"), role=session.get("role"),
                    dataset_time=SPEC.get("generated_at", ""),
                    wrong_penalty=WRONG_PENALTY, hint_penalty=HINT_PENALTY, max_hints=MAX_HINTS)
 
@@ -170,13 +178,17 @@ def api_config():
 def api_login():
     d = request.json or {}
     u = (d.get("username","") or "").strip().lower(); p = (d.get("password","") or "").strip()
+    if u == INSTRUCTOR_USER.lower() and p == INSTRUCTOR_PASS:      # instructor via portal login
+        session.pop("team", None); session["role"] = "instructor"
+        return jsonify(role="instructor")
     if not valid_login(u, p):
         return jsonify(error="아이디 또는 비밀번호가 올바르지 않습니다"), 401
-    session["team"] = u; return jsonify(team=u)
+    session.pop("role", None); session["team"] = u
+    return jsonify(team=u, role="student")
 
 @app.route("/api/logout", methods=["POST"])
 def api_logout():
-    session.pop("team", None); return jsonify(ok=True)
+    session.pop("team", None); session.pop("role", None); return jsonify(ok=True)
 
 @app.route("/api/questions")
 def api_questions():
@@ -217,7 +229,7 @@ def api_hint():
         upsert(team, qno, hints_used=used,
                status=(r["status"] if r and r["status"] in ("wrong",) else "in_progress"))
         return jsonify(hint=QByNo[qno]["hints"][used-1], index=used,
-                       remaining=MAX_HINTS-used, penalty=HINT_PENALTY,
+                       remaining=MAX_HINTS-used, penalty=used*HINT_PENALTY,
                        team_score=team_score(team))
 
 @app.route("/api/submit", methods=["POST"])
@@ -265,7 +277,9 @@ def api_leaderboard():
 
 # ------------------------------------------------------------ instructor --- #
 def _auth_instr():
-    return request.args.get("key") == INSTRUCTOR_KEY or (request.json or {}).get("key") == INSTRUCTOR_KEY
+    return (session.get("role") == "instructor"
+            or request.args.get("key") == INSTRUCTOR_KEY
+            or (request.json or {}).get("key") == INSTRUCTOR_KEY)
 
 @app.route("/instructor")
 def instructor_page():
@@ -332,7 +346,7 @@ def api_instr_grade():
     if not q or not team: return jsonify(error="bad request"), 400
     r = row(team, qno); hints = r["hints_used"] if r else 0
     award = max(0, min(award, q["score"]))
-    final = max(0, award - hints*HINT_PENALTY)      # hints still cost on manual
+    final = max(0, award - hint_cost(hints))        # hints still cost on manual
     with _lock:
         upsert(team, qno, status="graded", score=final, hints_used=hints)
     return jsonify(ok=True, score=final)

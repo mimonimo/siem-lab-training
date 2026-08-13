@@ -5,20 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>실습 교안 · 위협 탐지 실습</title>
 <style>
-  :root{--bg:#f4f7fb;--panel:#fff;--panel2:#f6f9fc;--bd:#d3dae6;--bd2:#e7edf5;
-    --ink:#1a1c21;--ink2:#4d5763;--ink3:#8a95a5;--pri:#0071c2;--pri-d:#00589b;--pri-wash:#e6f1fb;
-    --teal:#00a0a8;--ok:#00926a;--no:#bd271e;--warn:#a86a00;--warn-wash:#fbf3e0;--warn-bd:#eddcae;
-    --r:8px;--sh:0 1px 2px rgba(20,30,50,.06),0 2px 6px rgba(20,30,50,.05);
+  :root{--bg:#eef2f8;--panel:#fff;--panel2:#f7f9fc;--panel3:#eef2f8;--bd:#e4e9f2;--bd2:#d3dbe8;
+    --ink:#0f172a;--ink2:#475569;--ink3:#94a3b8;--pri:#3457e6;--pri-d:#2743c7;--pri-wash:#eaefff;--pri-bd:#c7d3fb;
+    --teal:#0ea5a4;--ok:#12a150;--no:#e11d48;--warn:#c07a00;--warn-wash:#fdf5e3;--warn-bd:#eeddb0;
+    --r:12px;--sh:0 1px 2px rgba(15,23,42,.05),0 4px 10px -3px rgba(15,23,42,.08);
+    --sh-lg:0 16px 34px -10px rgba(15,23,42,.16);
     --mono:"D2Coding","Consolas",ui-monospace,monospace;
-    --sans:-apple-system,"Segoe UI",Roboto,"Malgun Gothic","맑은 고딕",sans-serif;}
-  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.65}
+    --sans:"Pretendard",-apple-system,"Segoe UI",Roboto,"Malgun Gothic","맑은 고딕",sans-serif;}
+  *{box-sizing:border-box} body{margin:0;color:var(--ink);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased;
+    background:radial-gradient(900px 420px at 88% -8%,#dfe7fb 0,transparent 62%),radial-gradient(760px 380px at 6% 0%,#e7fbf6 0,transparent 55%),var(--bg);background-attachment:fixed}
   a{color:var(--pri);text-decoration:none}
-  .hdr{position:sticky;top:0;z-index:20;background:var(--panel);border-bottom:1px solid var(--bd);box-shadow:0 1px 3px rgba(20,30,50,.05)}
-  .hdr-in{max-width:900px;margin:0 auto;padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between}
-  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px}
-  .brand .mk{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,#0071c2,#00a0a8);display:flex;align-items:center;justify-content:center;color:#fff}
-  .hbtn{border:1px solid var(--bd);background:var(--panel);color:var(--ink2);border-radius:6px;padding:6px 11px;font-size:12.5px;font-weight:600;cursor:pointer;margin-left:6px}
-  .hbtn.pri{background:var(--pri);color:#fff;border-color:var(--pri)}
+  .hdr{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.85);backdrop-filter:saturate(180%) blur(10px);border-bottom:1px solid var(--bd);box-shadow:0 6px 20px -12px rgba(15,23,42,.18)}
+  .hdr-in{max-width:900px;margin:0 auto;padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:750;font-size:15px;letter-spacing:-.3px}
+  .brand .mk{width:28px;height:28px;border-radius:8px;background:linear-gradient(140deg,#3457e6,#0ea5a4);display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 4px 12px -2px rgba(52,87,230,.5)}
+  .hdr-r{display:flex;gap:8px}
+  .hbtn{border:1px solid var(--bd);background:var(--panel);color:var(--ink2);border-radius:9px;padding:7px 13px;font-size:12.5px;font-weight:650;cursor:pointer;transition:.16s;box-shadow:var(--sh);text-decoration:none;display:inline-flex;align-items:center}
+  .hbtn:hover{background:var(--panel2);transform:translateY(-1px)}
+  .hbtn.pri{background:linear-gradient(180deg,#3f61ea,#3457e6);color:#fff;border-color:transparent;box-shadow:0 6px 14px -5px rgba(52,87,230,.6)}
+  .hbtn.pri:hover{filter:brightness(1.04)}
   .wrap{max-width:900px;margin:24px auto;padding:0 20px}
   .lead{background:linear-gradient(120deg,#eaf3fb,#f6f9fc);border:1px solid var(--bd);border-radius:12px;padding:20px 22px;margin-bottom:22px}
   .lead h1{margin:0 0 6px;font-size:22px;letter-spacing:-.4px}
@@ -49,7 +54,7 @@
 <body>
   <header class="hdr"><div class="hdr-in">
     <div class="brand"><span class="mk">📘</span>실습 교안 · 위협 탐지</div>
-    <div><a class="hbtn" href="/">← 미션 포털</a><button class="hbtn pri" onclick="window.open('https://'+location.hostname,'_blank')">Wazuh 열기 ↗</button></div>
+    <div class="hdr-r"><a class="hbtn" href="/">← 미션 포털</a><button class="hbtn pri" onclick="window.open('https://'+location.hostname,'_blank')">Wazuh 열기 ↗</button></div>
   </div></header>
 
   <div class="wrap">
