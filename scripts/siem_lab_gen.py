@@ -119,6 +119,65 @@ def line_cron_run(dt, pid, user, command):
 def line_crontab_edit(dt, pid, user, action="REPLACE"):
     return f"{syslog_ts(dt)} {HOST} crontab[{pid}]: ({user}) {action} ({user})"
 
+# --- additional log types (variety) ----------------------------------------- #
+def line_aerror(dt, level, pid, ip, msg, port=None):
+    cl = f"[client {ip}:{port or random.randint(40000,60000)}] " if ip else ""
+    return f"[{dt.strftime('%a %b %d %H:%M:%S.%f %Y')}] [{level}] [pid {pid}] {cl}{msg}"
+
+def line_ufw(dt, src, dpt, proto="TCP", action="BLOCK"):
+    return (f"{syslog_ts(dt)} {HOST} kernel: [UFW {action}] IN=ens33 OUT= "
+            f"MAC=00:0c:29:aa:bb:cc:00:0c:29:dd:ee:ff:08:00 SRC={src} DST=192.168.208.134 "
+            f"LEN=60 TOS=0x00 PREC=0x00 TTL=54 ID={random.randint(1,65000)} PROTO={proto} "
+            f"SPT={random.randint(30000,60000)} DPT={dpt} WINDOW=1024 RES=0x00 SYN URGP=0")
+
+def line_mail(dt, tail):
+    return f"{syslog_ts(dt)} {HOST} postfix/{tail}"
+
+def add_diverse_logs(err, ufw, mail):
+    """Populate apache error.log, UFW firewall log, and postfix mail.log so the
+    dataset spans multiple log SOURCES (web errors / firewall / mail), not just
+    SSH auth + web access."""
+    # --- apache error.log: normal PHP notices + missing files -----------------
+    emsgs = [
+        ("php:notice", "PHP Notice:  Undefined index: page in /var/www/html/index.php on line 42"),
+        ("php:warn",  "PHP Warning:  filemtime(): stat failed for /var/www/html/cache/tmp in /var/www/html/lib/cache.php on line 20"),
+        ("core:info", "AH00128: File does not exist: /var/www/html/favicon.ico"),
+        ("core:info", "AH00128: File does not exist: /var/www/html/apple-touch-icon.png"),
+        ("authz_core:error", "AH01630: client denied by server configuration: /var/www/html/.htpasswd"),
+    ]
+    for _ in range(42):
+        off = -random.randint(0, 24*3600)
+        lvl, msg = random.choice(emsgs)
+        err.emit(off, line_aerror(t(off), lvl, random.randint(1000, 3000), rand_client_ip(), msg))
+    # scanner 404s surface as error.log "File does not exist" (storyline C)
+    for i, p in enumerate(["/admin.php", "/wp-login.php", "/phpmyadmin/", "/.env", "/shell.php", "/config.php"]):
+        off = -14*3600 + i*3
+        err.emit(off, line_aerror(t(off), "core:info", random.randint(1000, 3000),
+                 ACTORS["scanner"], f"AH00128: File does not exist: /var/www/html{p}"))
+
+    # --- UFW firewall: blocked port scan from the scanner + normal blocks -----
+    tC = -14*3600 - 400
+    for i, dpt in enumerate([21, 23, 25, 3306, 3389, 8080, 445, 139, 5432, 6379, 27017, 9200]):
+        ufw.emit(tC + i*2, line_ufw(t(tC + i*2), ACTORS["scanner"], dpt))
+    # a few blocked hits toward the SSH brute-force source too (defence in depth)
+    for i in range(6):
+        off = -8*3600 - 200 + i*4
+        ufw.emit(off, line_ufw(t(off), ACTORS["attacker_main"], 22))
+    for _ in range(22):     # background internet noise blocked at the edge
+        off = -random.randint(0, 24*3600)
+        ufw.emit(off, line_ufw(t(off), f"203.0.113.{random.randint(2,250)}",
+                 random.choice([23, 2323, 5900, 1433, 8443, 3389])))
+
+    # --- postfix mail.log: normal corporate mail flow -------------------------
+    for i in range(26):
+        off = -random.randint(0, 24*3600)
+        pid = random.randint(1000, 9000)
+        qid = f"{random.randint(0x100000,0xFFFFFF):06X}"
+        sender = random.choice(["hr", "it-helpdesk", "noreply", "payroll", "notice"])
+        mail.emit(off,   line_mail(t(off),   f"smtpd[{pid}]: connect from mail-relay.example.com[203.0.113.{random.randint(2,60)}]"))
+        mail.emit(off+1, line_mail(t(off+1), f"qmgr[{pid}]: {qid}: from=<{sender}@bridgeworks.local>, size={random.randint(2000,90000)}, nrcpt=1 (queue active)"))
+        mail.emit(off+2, line_mail(t(off+2), f"smtp[{pid}]: {qid}: to=<staff{random.randint(1,40)}@bridgeworks.local>, relay=local, delay={random.uniform(0.1,2.0):.2f}, status=sent (delivered to mailbox)"))
+
 def audit_event(dt, seq, comm, exe, argv, uid=33, auid=1001, ppid=1, pid=99999,
                 key="exec_trace", cwd="/var/www/html"):
     """Return the 3 standard auditd lines (SYSCALL/EXECVE/PROCTITLE) for one
@@ -142,17 +201,32 @@ def audit_event(dt, seq, comm, exe, argv, uid=33, auid=1001, ppid=1, pid=99999,
 # --------------------------------------------------------------------------- #
 NORMAL_PATHS = [
     "/", "/index.html", "/about.html", "/products.html", "/contact.html",
-    "/css/main.css", "/css/theme.css", "/js/app.js", "/js/vendor.js",
-    "/img/logo.png", "/img/hero.jpg", "/img/banner.png", "/favicon.ico",
+    "/css/main.css", "/css/theme.css", "/css/print.css", "/js/app.js", "/js/vendor.js",
+    "/js/chart.min.js", "/img/logo.png", "/img/hero.jpg", "/img/banner.png",
+    "/img/team/photo1.jpg", "/img/icons/sprite.svg", "/favicon.ico", "/apple-touch-icon.png",
     "/portal/", "/portal/login", "/portal/dashboard", "/portal/notices",
-    "/api/status", "/api/health", "/docs/", "/docs/guide.html", "/robots.txt",
+    "/portal/notices/2026-08", "/portal/approval", "/portal/approval/inbox",
+    "/portal/attendance", "/portal/messenger", "/portal/drive", "/portal/drive/shared",
+    "/portal/hr/payslip", "/portal/hr/vacation", "/portal/board/free",
+    "/api/status", "/api/health", "/api/v1/notices", "/api/v1/user/me",
+    "/api/v1/attendance/today", "/api/v1/approval/count", "/docs/", "/docs/guide.html",
+    "/docs/security-policy.pdf", "/robots.txt", "/sitemap.xml", "/help/faq",
+    "/search?q=%ED%9C%B4%EA%B0%80%EC%8B%A0%EC%B2%AD", "/search?q=%EC%A1%B0%EC%A7%81%EB%8F%84",
 ]
 NORMAL_UA = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0 Safari/537.36 Edg/127.0",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0",
     "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
+    "Mozilla/5.0 (Linux; Android 14; SM-S911N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36",
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+]
+NORMAL_REFERERS = [
+    "-", "-", "-",
+    "https://portal.bridgeworks.local/", "https://portal.bridgeworks.local/portal/dashboard",
+    "https://portal.bridgeworks.local/portal/notices", "https://www.google.com/",
 ]
 # Intranet portal: normal traffic is LAN-only. Range .100-.240 avoids every
 # special actor IP (attackers .23/.47/.99, admin .50) so noise never collides
@@ -166,9 +240,30 @@ def add_normal_access(af, count):
         ip = rand_client_ip()
         path = random.choice(NORMAL_PATHS)
         ua = random.choice(NORMAL_UA)
-        status = random.choices([200, 304, 200, 200, 301], weights=[6,3,6,6,1])[0]
-        size = 0 if status == 304 else random.randint(180, 8000)
-        af.emit(off, line_access(ip, t(off), "GET", path, status, size, ua))
+        ref = random.choice(NORMAL_REFERERS)
+        status = random.choices([200, 304, 200, 200, 301, 302, 404],
+                                weights=[10, 4, 10, 10, 1, 1, 1])[0]
+        method = "POST" if path.startswith("/api/") and random.random() < 0.2 else "GET"
+        size = 0 if status == 304 else random.randint(180, 12000)
+        af.emit(off, line_access(ip, t(off), method, path, status, size, ua, referer=ref))
+
+def add_benign_background(auth, cron):
+    """Routine system activity: legit cron jobs + normal admin sudo. Pure noise."""
+    jobs = ["/usr/sbin/logrotate /etc/logrotate.conf",
+            "/usr/lib/sysstat/debian-sa1 1 1",
+            "( cd / && run-parts --report /etc/cron.daily )",
+            "/usr/bin/certbot renew -q", "/opt/monitoring/healthcheck.sh",
+            "/usr/bin/find /tmp -type f -atime +7 -delete"]
+    for i in range(28):
+        off = -random.randint(0, 24*3600)
+        cron.emit(off, line_cron_run(t(off), 30000+i,
+                  random.choice(["root","root","root","www-data"]), random.choice(jobs)))
+    for i in range(7):
+        off = -random.randint(2*3600, 20*3600)
+        cmd = random.choice(["/usr/bin/apt-get update", "/usr/bin/systemctl status apache2",
+                             "/usr/bin/tail -n 100 /var/log/syslog", "/usr/bin/journalctl -u ssh"])
+        auth.emit(off, line_sudo(t(off), 40000+i, ACCOUNTS["sysadmin"], "pts/2",
+                  f"/home/{ACCOUNTS['sysadmin']}", "root", cmd))
 
 def add_normal_ssh(auth, count):
     """A few benign SSH logins (different accounts, different times)."""
@@ -527,6 +622,9 @@ def main():
     auth  = LogFile("/var/log/auth.log",           owner="syslog:adm", mode=0o640)
     cron  = LogFile("/var/log/cron.log",           owner="syslog:adm", mode=0o640)
     audit = LogFile("/var/log/audit/audit.log",    owner="root:adm", mode=0o600)
+    err   = LogFile("/var/log/apache2/error.log",  owner="root:adm", mode=0o640)
+    ufw   = LogFile("/var/log/ufw.log",            owner="syslog:adm", mode=0o640)
+    mail  = LogFile("/var/log/mail.log",           owner="syslog:adm", mode=0o640)
 
     steps = []
     # ---- attack storylines --------------------------------------------------
@@ -538,17 +636,19 @@ def main():
     storyline_F(af, auth, cron, audit, steps)   # lockout (decoy)
     present = ["A", "B", "C", "D", "E", "F"]
 
-    # ---- normal noise (15-20:1 vs. true webshell/attack web hits) -----------
-    n_attack_access = sum(1 for r in af.records if "search.php" in r[1])
-    add_normal_access(af, n_attack_access * NOISE_RATIO)
-    add_normal_ssh(auth, 8)
+    # ---- normal noise (rich background so analysis has real volume) ---------
+    normal_access = int(os.environ.get("SIEM_LAB_NORMAL_ACCESS", "650"))
+    add_normal_access(af, normal_access)
+    add_normal_ssh(auth, 16)
+    add_benign_background(auth, cron)
+    add_diverse_logs(err, ufw, mail)
 
     # ---- stop services holding the target files, write, restart ------------
     for svc in ("apache2", "auditd", "rsyslog"):
         subprocess.run(["systemctl", "stop", svc], check=False)
 
     line_index = {}
-    for lf in (af, auth, cron, audit):
+    for lf in (af, auth, cron, audit, err, ufw, mail):
         lf.write(line_index)
 
     # ---- drop inert artifacts + set mtimes ---------------------------------

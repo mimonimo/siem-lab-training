@@ -4,7 +4,7 @@
 # the currently-planted logs. Emits:
 #   /opt/siem-lab/answers/mission_answer_key.md   (INSTRUCTOR - answers+evidence)
 #   /opt/siem-lab/student/mission_sheet.md        (STUDENT - questions only)
-import json, os
+import json, os, re
 
 M  = json.load(open("/opt/siem-lab/answers/manifest.json", encoding="utf-8"))
 S  = {s["id"]: s for s in M["steps"]}
@@ -26,8 +26,8 @@ Q = [
    q="스토리라인 A에서 공격자가 SSH 브루트포스 끝에 최초로 인증에 성공한 시각(KST)은?",
    a=f'{t("A1")}  (계정 {AZ["victim"]}, 출발지 {AC["attacker_main"]})',
    ev=f'auth.log 라인 {S["A1"]["line"]}  ·  토큰 `{tok("A1")}`',
-   wz='Discover(wazuh-alerts-*) 에서 rule.groups:authentication_success 또는 data.srcip:"198.51.100.23"',
-   tool="Wazuh Discover(wazuh-archives-*) 또는 /var/log/auth.log"),
+   wz='data.srcip:"198.51.100.23" and rule.groups:authentication_success',
+   tool="wazuh-alerts-* 에서 인증 성공 이벤트의 timestamp 확인"),
  dict(sec="필수", typ="직접조회", sl="A", diff="하", score=3,
    q="최초 침투에 사용된 공격자의 출발지 IP 주소는?",
    a=AC["attacker_main"],
@@ -56,7 +56,7 @@ Q = [
    q="공격자가 지속성(persistence) 확보를 위해 등록한 cron이 반복 실행하는 대상 명령은?",
    a="/tmp/.cache/kworker  (매분 * * * * * 및 @reboot)",
    ev=f'cron.log 라인 {S["A5_run"]["line"]} · /etc/cron.d/apache-backup',
-   wz='rule.id:100112 (cron 지속성) 또는 full_log:"kworker"',
+   wz='rule.id:100112 or full_log:"kworker"',
    tool="cron 로그 및 /etc/cron.d/ 확인"),
  dict(sec="필수", typ="직접조회", sl="A", diff="중", score=4,
    q="시스템 바이너리처럼 위장해 배치된 변조 파일의 전체 경로는?",
@@ -124,14 +124,14 @@ Q = [
    q="웹셸을 통한 명령 실행이 auditd에 기록될 때 사용된 감사 키(key)는?",
    a="webshell_exec",
    ev=f'audit.log 라인 {S["A3_audit"]["line"]} (comm="id", key="webshell_exec")',
-   wz='(호스트) ausearch -k webshell_exec',
-   tool="ausearch -k <key> 로 감사 키 탐색"),
+   wz='full_log:"webshell_exec"',
+   tool="wazuh-archives-* 에서 audit 로그의 key= 값 확인 (또는 호스트 ausearch -k)"),
  dict(sec="필수", typ="직접조회", sl="A", diff="중", score=4,
    q="cron 지속성 등록 행위가 auditd에 남긴 감사 키(key)는?",
    a="cron_persist",
    ev=f'audit.log 라인 {S["A5_audit"]["line"]}',
-   wz='(호스트) ausearch -k cron_persist',
-   tool="ausearch -k cron_persist"),
+   wz='full_log:"cron_persist"',
+   tool="wazuh-archives-* 에서 audit 로그의 key= 값 확인"),
  dict(sec="필수", typ="미끼식별(복수)", sl="종합", diff="상", score=6, discuss=True,
    q=("다음 다섯 출발지 중 '실제 대응이 필요한' 침해 관련만 모두 고르시오: "
       "① 198.51.100.23  ② 192.0.2.77  ③ 192.168.208.50  ④ 198.51.100.99  ⑤ 198.51.100.47"),
@@ -159,8 +159,8 @@ Q = [
    q="A3의 웹셸 명령들이 auditd(execve)에도 남아 있는지 확인하고, 기록된 프로세스명(comm) 중 3개를 쓰시오.",
    a="예. comm=id / whoami / uname / cat / ss 중 3개 (key=webshell_exec)",
    ev="ausearch -k webshell_exec",
-   wz='(호스트) ausearch -k webshell_exec | grep comm=',
-   tool="ausearch -k webshell_exec"),
+   wz='full_log:"webshell_exec" and full_log:"comm="',
+   tool="wazuh-archives-* 에서 audit 로그의 comm= 값들 확인"),
  dict(sec="보너스", typ="직접조회", sl="E", diff="중", score=4,
    q="tar 압축(E1) 대상에 포함된 경로 2개를 쓰시오.",
    a="/var/www 와 /etc/passwd",
@@ -183,7 +183,7 @@ Q = [
    q="archives 인덱스에서 srcip 198.51.100.23 으로 필터하면 어떤 로그 소스(파일)들이 함께 검색되는가?",
    a="/var/log/apache2/access.log, /var/log/auth.log, /var/log/audit/audit.log (동일 공격자가 웹·인증·프로세스 로그에 걸침)",
    ev="wazuh-archives-* location 필드",
-   wz='wazuh-archives-* 에서 data.srcip:"198.51.100.23", location 필드로 분류',
+   wz='data.srcip:"198.51.100.23"',
    tool="wazuh-archives-* Discover"),
  dict(sec="보너스", typ="판단", sl="F", diff="하", score=3,
    q="스토리라인 F에서 잠긴 계정과 잠금이 발동한 실패 횟수 임계치는?",
@@ -214,7 +214,7 @@ Q = [
    a="C(sqlmap 스캐너: 정찰, 침해 미연결), D(정상 관리자 배포), F(로그인 실패 후 잠금: 방어 성공). "
      "알림 발생이 곧 대응 필요를 뜻하지 않음 — 우선순위 선별이 핵심.",
    ev="C1/D1-D2/F1",
-   wz='rule.id:100102(C), srcip 192.168.208.50(D), srcip 198.51.100.99(F)',
+   wz='rule.id:100102 or data.srcip:"192.168.208.50" or data.srcip:"198.51.100.99"',
    tool="세 미끼 스토리라인 종합"),
  dict(sec="보너스", typ="Wazuh", sl="A", diff="중", score=4,
    q="라이브 데모의 '의심스러운 검색 요청' 버튼을 누른 뒤 Wazuh에서 어떤 rule.id 알림이 새로 발생하는가?",
@@ -244,7 +244,7 @@ Q = [
    q="MITRE ATT&CK 관점에서 (1)초기 접근 (2)지속성 (3)유출 단계에 해당하는 사건을 이 데이터셋에서 하나씩 짝지으시오.",
    a="초기 접근: A1 SSH 브루트포스(T1110). 지속성: A5 cron(T1053) 및 B1 sudoers(T1548.003). 유출: E2 curl 업로드(T1041).",
    ev="A1 / A5·B1 / E2",
-   wz='rule.mitre.id 필드 또는 rule.id:100101/100111/100112',
+   wz='rule.id:100101 or rule.id:100111 or rule.id:100112',
    tool="각 사건의 목적(전술) 분류"),
 ]
 
@@ -301,6 +301,49 @@ def grade_entry(qno):
         return {"mode": "manual"}
     return {"mode": mode, "accept": g[1]}
 
+# --- pedagogical insight per storyline (왜 의심? 어떤 관점?) ------------------ #
+SL_INSIGHT = {
+ "A": ("정상 웹 접근(200/304)이 대부분인 access.log에 GET 파라미터로 cmd=... 가 섞여 들어오면 "
+       "웹셸을 통한 원격 명령 실행을 의심해야 합니다. 인증 로그의 '다수 Failed → Accepted'(브루트포스 성공)를 "
+       "시작점으로 잡고, 같은 출발지 IP를 따라 웹셸 배치→명령 실행→페이로드 다운로드→cron 지속성→바이너리 변조 순으로 "
+       "시간축을 이어 붙이며 공격 흐름을 재구성하는 것이 핵심 관점입니다."),
+ "B": ("권한 상승은 '인증 성공 이후'에 sudoers.d 생성·새 계정·그룹 변경 형태로 나타납니다. "
+       "야간 등 비정상 시간대에, 앞서 침투한 공격자와 '동일 출발지 IP/계정' 세션에서 발생했다면 강한 의심 신호입니다. "
+       "auditd priv_esc 키와 auth.log의 sudo 명령을 교차 확인하세요."),
+ "C": ("짧은 간격의 다수 404 + sqlmap 등 스캐너 User-Agent + 방화벽(UFW) 다수 포트 차단은 '정찰(스캔)' 신호입니다. "
+       "실제 침해(성공 응답·후속 행위)로 이어졌는지가 판단 기준이며, 이어지지 않았다면 저위험으로 분류합니다. "
+       "알림이 떴다고 모두 대응하는 게 아니라 우선순위를 가려내는 관점이 중요합니다."),
+ "D": ("정상 관리자의 야간 배포는 '공격처럼 보이지만 정상'인 대표 오탐 사례입니다. "
+       "계정(관리자)·출발지(사내 LAN)·작업 목적(정기 배포 cron)이 정상 업무와 일치하는지를 근거로 판단하세요. "
+       "공격자 IP·비정상 계정과의 '차이'를 짚어내는 것이 오탐을 걸러내는 관점입니다."),
+ "E": ("정보 유출은 대개 침해의 마지막 단계로, 파일 압축(tar) 후 외부로 전송(curl -T)하는 흔적으로 나타납니다. "
+       "응답 크기가 비정상적으로 크거나 외부 목적지로의 업로드가 보이면 유출을 의심하고, "
+       "앞선 침투·권한상승과 '동일 공격자'로 이어지는 체인인지 확인하세요."),
+ "F": ("반복 로그인 실패 후 계정 잠금(pam_faillock)은 '방어가 작동한' 사례입니다. 성공 인증이 없으므로 "
+       "실제 침해가 아니며 대응 불필요로 분류합니다. '실패만 있는가, 성공이 섞였는가'를 반드시 확인하는 관점이 중요합니다."),
+ "종합": ("여러 스토리라인이 한 로그 뭉치에 섞여 있습니다. 알림·로그를 IP·계정·시간으로 묶어 "
+        "'대응이 필요한 실제 침해'와 '정찰/정상업무/방어성공 같은 미끼'를 구분하는 것이 실무 SOC의 핵심 역량입니다."),
+}
+def insight_for(sl):
+    return SL_INSIGHT.get(sl[0] if sl and sl[0] in SL_INSIGHT else "종합", SL_INSIGHT["종합"])
+
+# --- keep the Wazuh hint a VALID query (strip any trailing prose) ------------ #
+def clean_query(wz):
+    m = re.match(r'^([\w.\-]+:\s*("[^"]*"|[\w.\-*]+)'
+                 r'(\s+(and|or|AND|OR)\s+[\w.\-]+:\s*("[^"]*"|[\w.\-*]+))*)', (wz or "").strip())
+    return m.group(1) if m else (wz or "").strip()
+
+# --- expected answer format (reduces input errors) --------------------------- #
+def derive_fmt(g):
+    mode = g["mode"]; acc = g.get("accept", [])
+    if mode == "manual": return "서술형 — 판단과 근거를 함께 작성"
+    if acc and re.match(r"^\d{1,2}:\d{2}", acc[0]): return "시각  HH:MM:SS  (예: 04:38:17)"
+    if any(re.match(r"^\d+\.\d+\.\d+\.\d+$", a) for a in acc): return "IP 주소  xxx.xxx.xxx.xxx"
+    if any("/" in a for a in acc): return "경로 또는 파일명  (예: /var/www/html/x 또는 x.php)"
+    if mode == "any_n": return "여러 개 입력 — 쉼표로 구분"
+    if mode == "all":   return "해당 값들을 모두 포함해 입력"
+    return "단어/짧은 답"
+
 
 def render():
     req = [q for q in Q if q["sec"] == "필수"]
@@ -344,7 +387,7 @@ def render():
                 f"　`{d}`\n\n"
                 f"　**정답:** {q['a']}\n\n"
                 f"　**증적:** {q['ev']}\n\n"
-                f"　**Wazuh 쿼리:** `{q['wz']}`\n\n---\n")
+                f"　**Wazuh 쿼리:** `{clean_query(q['wz'])}`\n\n---\n")
 
     # ---- student sheet ----
     st = [intro_student, "## 필수 구간\n"]
@@ -396,12 +439,24 @@ def render():
     spec = {"generated_at": M["generated_at"], "total": len(ordered),
             "required": len(req), "bonus": len(bon), "questions": []}
     for i, q in enumerate(ordered, start=1):
+        wzq = clean_query(q["wz"])
+        # progressive hints (paid): method -> exact query -> evidence location
+        hints = [
+            f"[방법] {q.get('tool','로그를 살펴보세요')}",
+            f"[조회] Wazuh 쿼리: {wzq}",
+            f"[근거 위치] {q['ev']}",
+        ]
+        g = grade_entry(i)
         spec["questions"].append({
             "qno": i, "section": q["sec"], "type": q["typ"], "sl": q["sl"],
             "diff": q["diff"], "score": q["score"], "discuss": bool(q.get("discuss")),
-            "question": q["q"], "hint": q.get("tool", ""), "wazuh": q["wz"],
-            "answer": q["a"],                 # instructor reference (portal never sends to client)
-            "grade": grade_entry(i),
+            "question": q["q"],
+            "fmt": derive_fmt(g),             # expected answer format (input placeholder)
+            "hints": hints,                   # served one-by-one via /api/hint (paid)
+            "explain": {"answer": q["a"], "evidence": q["ev"], "wazuh": wzq,
+                        "insight": insight_for(q["sl"])},
+            "answer": q["a"],                 # instructor reference
+            "grade": g,
         })
 
     os.makedirs("/opt/siem-lab/student", exist_ok=True)

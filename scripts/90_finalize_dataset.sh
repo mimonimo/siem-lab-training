@@ -10,12 +10,13 @@ LOG=/opt/siem-lab/logs/wazuh-install.log
 PW=$(grep -oP 'Password:\s*\K.+' "$LOG" 2>/dev/null | tail -1 | tr -d ' \r')
 q(){ curl -s -k -u "admin:$PW" "$@"; }
 ES=https://127.0.0.1:9200
-FILES="/var/log/apache2/access.log /var/log/auth.log /var/log/cron.log /var/log/audit/audit.log"
+FILES="/var/log/apache2/access.log /var/log/apache2/error.log /var/log/auth.log /var/log/cron.log /var/log/audit/audit.log /var/log/ufw.log /var/log/mail.log"
 
 echo "### [1/5] regenerate clean dataset + manifest"
 python3 "$SC/siem_lab_gen.py" | tail -2
 
 echo "### [2/5] snapshot + empty + restart-on-empty + append (clean ingest)"
+systemctl stop siem-livelog 2>/dev/null || true    # pause continuous generator
 systemctl stop apache2 auditd rsyslog
 mkdir -p /tmp/ds; rm -f /tmp/ds/*
 for f in $FILES; do cp -p "$f" "/tmp/ds/$(echo "$f" | tr / _)"; done
@@ -25,10 +26,11 @@ q -X DELETE "$ES/wazuh-alerts-*"   >/dev/null; q -X DELETE "$ES/wazuh-archives-*
 systemctl restart wazuh-manager
 sleep 25
 for f in $FILES; do cat "/tmp/ds/$(echo "$f" | tr / _)" >> "$f"; done
-chown root:adm /var/log/apache2/access.log /var/log/audit/audit.log
-chown syslog:adm /var/log/auth.log /var/log/cron.log
+chown root:adm /var/log/apache2/access.log /var/log/apache2/error.log /var/log/audit/audit.log
+chown syslog:adm /var/log/auth.log /var/log/cron.log /var/log/ufw.log /var/log/mail.log
 chmod 640 $FILES
 systemctl start rsyslog auditd apache2
+systemctl start siem-livelog 2>/dev/null || true    # resume continuous generator
 
 echo "### [3/5] regenerate mission bank + refresh portal grading spec"
 python3 "$SC/mission_bank_gen.py" | tail -2

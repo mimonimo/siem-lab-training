@@ -42,9 +42,10 @@ systemctl is-active --quiet wazuh-manager || { echo "Wazuh install failed — ch
 
 step "4. Wazuh config (custom rules, archives, vuln-detector off)"
 bash "$LAB"/scripts/40_wazuh_config.sh
-step "5. dashboard index patterns + wide default time range"
+step "5. dashboard index patterns + wide default time range + tidy views"
 bash "$LAB"/scripts/47_dashboard_setup.sh
 bash "$LAB"/scripts/48_alerts_pattern.sh
+python3 "$LAB"/scripts/config_dashboard.py    # hide noise fields + per-log-type saved searches
 
 step "6. generate dataset + mission bank (grading spec for portal)"
 python3 "$LAB"/scripts/siem_lab_gen.py

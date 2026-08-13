@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>실습 교안 · 위협 탐지 실습</title>
+<style>
+  :root{--bg:#f4f7fb;--panel:#fff;--panel2:#f6f9fc;--bd:#d3dae6;--bd2:#e7edf5;
+    --ink:#1a1c21;--ink2:#4d5763;--ink3:#8a95a5;--pri:#0071c2;--pri-d:#00589b;--pri-wash:#e6f1fb;
+    --teal:#00a0a8;--ok:#00926a;--no:#bd271e;--warn:#a86a00;--warn-wash:#fbf3e0;--warn-bd:#eddcae;
+    --r:8px;--sh:0 1px 2px rgba(20,30,50,.06),0 2px 6px rgba(20,30,50,.05);
+    --mono:"D2Coding","Consolas",ui-monospace,monospace;
+    --sans:-apple-system,"Segoe UI",Roboto,"Malgun Gothic","맑은 고딕",sans-serif;}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.65}
+  a{color:var(--pri);text-decoration:none}
+  .hdr{position:sticky;top:0;z-index:20;background:var(--panel);border-bottom:1px solid var(--bd);box-shadow:0 1px 3px rgba(20,30,50,.05)}
+  .hdr-in{max-width:900px;margin:0 auto;padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px}
+  .brand .mk{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,#0071c2,#00a0a8);display:flex;align-items:center;justify-content:center;color:#fff}
+  .hbtn{border:1px solid var(--bd);background:var(--panel);color:var(--ink2);border-radius:6px;padding:6px 11px;font-size:12.5px;font-weight:600;cursor:pointer;margin-left:6px}
+  .hbtn.pri{background:var(--pri);color:#fff;border-color:var(--pri)}
+  .wrap{max-width:900px;margin:24px auto;padding:0 20px}
+  .lead{background:linear-gradient(120deg,#eaf3fb,#f6f9fc);border:1px solid var(--bd);border-radius:12px;padding:20px 22px;margin-bottom:22px}
+  .lead h1{margin:0 0 6px;font-size:22px;letter-spacing:-.4px}
+  .lead p{margin:0;color:var(--ink2);font-size:14px}
+  .sec{background:var(--panel);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--sh);padding:20px 22px;margin-bottom:18px}
+  .sec h2{margin:0 0 4px;font-size:18px;letter-spacing:-.3px;display:flex;align-items:center;gap:9px}
+  .sec h2 .n{width:26px;height:26px;border-radius:7px;background:var(--pri);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px}
+  .sec .sub{color:var(--ink3);font-size:13px;margin:0 0 14px}
+  .sec h3{font-size:14.5px;margin:16px 0 6px;color:var(--ink)}
+  .sec p,.sec li{font-size:14px;color:var(--ink2)}
+  code{font-family:var(--mono);background:var(--pri-wash);border:1px solid #cfe2f6;border-radius:4px;padding:1px 6px;font-size:13px;color:#134}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+  th,td{border:1px solid var(--bd);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);font-weight:700}
+  .tag{display:inline-block;font-size:11px;font-weight:700;border-radius:5px;padding:1px 7px;color:#fff}
+  .tag.chain{background:var(--no)} .tag.decoy{background:var(--warn)}
+  .note{background:var(--warn-wash);border:1px solid var(--warn-bd);border-radius:8px;padding:12px 14px;font-size:13.5px;color:#6b4e12;margin:10px 0}
+  .note b{color:#8a5a00}
+  .diagram{width:100%;overflow-x:auto;background:var(--panel2);border:1px solid var(--bd);border-radius:10px;padding:14px;margin:8px 0}
+  ul{margin:6px 0;padding-left:20px} li{margin:3px 0}
+  .kbd{font-family:var(--mono);background:#fff;border:1px solid var(--bd);border-radius:5px;padding:1px 6px;font-size:12.5px}
+  .steps{counter-reset:s;list-style:none;padding:0}
+  .steps li{counter-increment:s;position:relative;padding:6px 0 6px 34px;border-bottom:1px dashed var(--bd2)}
+  .steps li:last-child{border-bottom:0}
+  .steps li::before{content:counter(s);position:absolute;left:0;top:6px;width:22px;height:22px;border-radius:6px;background:var(--pri-wash);color:var(--pri);font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center}
+</style>
+</head>
+<body>
+  <header class="hdr"><div class="hdr-in">
+    <div class="brand"><span class="mk">📘</span>실습 교안 · 위협 탐지</div>
+    <div><a class="hbtn" href="/">← 미션 포털</a><button class="hbtn pri" onclick="window.open('https://'+location.hostname,'_blank')">Wazuh 열기 ↗</button></div>
+  </div></header>
+
+  <div class="wrap">
+    <div class="lead">
+      <h1>침해 웹서버 로그 분석 실습 교안</h1>
+      <p>여러 종류의 보안 로그를 Wazuh SIEM으로 분석해, 흩어진 흔적을 <b>시간·IP·계정</b>으로 연결하고
+      실제 침해와 미끼(정찰/정상업무/방어성공)를 구분하는 CTF형 실습입니다. 이 교안은 배경지식이 없어도
+      따라올 수 있도록 구성도·시나리오·분석 방법·주의점을 정리했습니다.</p>
+    </div>
+
+    <!-- 1. 구성도 -->
+    <div class="sec">
+      <h2><span class="n">1</span>네트워크 · 시스템 구성도</h2>
+      <p class="sub">이 실습 서버 한 대에 웹서버·로그·SIEM·문제풀이 포털이 모두 올라가 있습니다.</p>
+      <div class="diagram">
+      <svg viewBox="0 0 860 430" width="860" height="430" font-family="var(--sans)" font-size="12">
+        <defs>
+          <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#8a95a5"/></marker>
+          <marker id="arR" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#bd271e"/></marker>
+        </defs>
+        <!-- 외부 -->
+        <rect x="10" y="20" width="180" height="150" rx="10" fill="#fdecea" stroke="#e8b4af"/>
+        <text x="100" y="40" text-anchor="middle" font-weight="700" fill="#8a2a22">인터넷 (외부)</text>
+        <rect x="26" y="54" width="148" height="34" rx="6" fill="#fff" stroke="#e0483d"/>
+        <text x="100" y="70" text-anchor="middle" fill="#bd271e" font-weight="700">공격자</text>
+        <text x="100" y="83" text-anchor="middle" fill="#8a2a22" font-size="11">198.51.100.23</text>
+        <rect x="26" y="94" width="148" height="34" rx="6" fill="#fff" stroke="#e0a33d"/>
+        <text x="100" y="110" text-anchor="middle" fill="#a86a00" font-weight="700">스캐너(미끼)</text>
+        <text x="100" y="123" text-anchor="middle" fill="#6b4e12" font-size="11">192.0.2.77</text>
+        <text x="100" y="150" text-anchor="middle" fill="#8a2a22" font-size="11">203.0.113.66 (데모)</text>
+        <!-- 방화벽 -->
+        <rect x="230" y="70" width="70" height="50" rx="8" fill="#eef3f9" stroke="#c9a55a"/>
+        <text x="265" y="90" text-anchor="middle" font-size="18">🧱</text>
+        <text x="265" y="110" text-anchor="middle" font-weight="700" fill="#7a5b12" font-size="11">UFW</text>
+        <!-- 웹서버 VM -->
+        <rect x="340" y="20" width="230" height="230" rx="12" fill="#eaf3fb" stroke="#9dc3e6"/>
+        <text x="455" y="40" text-anchor="middle" font-weight="700" fill="#134f86">웹서버 VM (siem)</text>
+        <rect x="356" y="52" width="198" height="42" rx="7" fill="#fff" stroke="#0071c2"/>
+        <text x="455" y="70" text-anchor="middle" fill="#0071c2" font-weight="700">Apache :80</text>
+        <text x="455" y="85" text-anchor="middle" fill="#134f86" font-size="11">/var/www/html · 웹셸(inert)</text>
+        <rect x="356" y="100" width="198" height="86" rx="7" fill="#fff" stroke="#9dc3e6"/>
+        <text x="455" y="117" text-anchor="middle" fill="#134f86" font-weight="700" font-size="11">로그 소스 (7종)</text>
+        <text x="455" y="134" text-anchor="middle" fill="#4d5763" font-size="10.5">access · error · auth · audit</text>
+        <text x="455" y="149" text-anchor="middle" fill="#4d5763" font-size="10.5">cron · ufw(방화벽) · mail</text>
+        <text x="455" y="171" text-anchor="middle" fill="#00926a" font-size="10.5">auditd · rsyslog 로 수집</text>
+        <rect x="356" y="192" width="198" height="42" rx="7" fill="#e7f6f0" stroke="#7fceb3" stroke-width="1"/>
+        <text x="455" y="209" text-anchor="middle" fill="#00926a" font-weight="700" font-size="11">Wazuh 로컬 에이전트</text>
+        <text x="455" y="224" text-anchor="middle" fill="#2a5346" font-size="10.5">자기 자신을 모니터링</text>
+        <!-- Wazuh -->
+        <rect x="610" y="20" width="230" height="150" rx="12" fill="#e7f6f0" stroke="#8fd3ba"/>
+        <text x="725" y="40" text-anchor="middle" font-weight="700" fill="#00735a">Wazuh SIEM</text>
+        <rect x="626" y="52" width="198" height="30" rx="6" fill="#fff" stroke="#00a0a8"/><text x="725" y="72" text-anchor="middle" fill="#00735a" font-size="11">Manager (룰·디코더·알림)</text>
+        <rect x="626" y="88" width="198" height="30" rx="6" fill="#fff" stroke="#00a0a8"/><text x="725" y="108" text-anchor="middle" fill="#00735a" font-size="11">Indexer (OpenSearch)</text>
+        <rect x="626" y="124" width="198" height="30" rx="6" fill="#fff" stroke="#00a0a8"/><text x="725" y="144" text-anchor="middle" fill="#00735a" font-size="11">Dashboard :443</text>
+        <!-- 내부 LAN + 포털 -->
+        <rect x="610" y="200" width="230" height="60" rx="10" fill="#f6f9fc" stroke="#c9d4e3"/>
+        <text x="725" y="222" text-anchor="middle" font-weight="700" fill="#4d5763" font-size="12">내부 LAN</text>
+        <text x="725" y="240" text-anchor="middle" fill="#4d5763" font-size="11">관리자 opsadmin 192.168.208.50</text>
+        <text x="725" y="253" text-anchor="middle" fill="#4d5763" font-size="10.5">(미끼 D · 정상 야간배포)</text>
+        <rect x="340" y="290" width="500" height="54" rx="10" fill="#eef3f9" stroke="#c9d4e3"/>
+        <text x="590" y="312" text-anchor="middle" font-weight="700" fill="#134f86">학생 문제풀이 포털 :8081</text>
+        <text x="590" y="330" text-anchor="middle" fill="#4d5763" font-size="11">문제 확인 → Wazuh 분석 → 답안 제출(자동채점)</text>
+        <!-- arrows -->
+        <line x1="190" y1="95" x2="228" y2="95" stroke="#bd271e" stroke-width="2" marker-end="url(#arR)"/>
+        <line x1="300" y1="95" x2="338" y2="70" stroke="#bd271e" stroke-width="2" marker-end="url(#arR)"/>
+        <line x1="570" y1="140" x2="608" y2="95" stroke="#00926a" stroke-width="2" marker-end="url(#ar)"/>
+        <line x1="725" y1="170" x2="725" y2="198" stroke="#8a95a5" stroke-width="1.5" marker-end="url(#ar)"/>
+        <line x1="590" y1="288" x2="620" y2="172" stroke="#0071c2" stroke-width="1.5" marker-end="url(#ar)"/>
+        <text x="360" y="368" font-size="11" fill="#8a2a22">■ 빨강: 공격 트래픽</text>
+        <text x="500" y="368" font-size="11" fill="#00926a">■ 초록: 로그 수집·모니터링</text>
+        <text x="680" y="368" font-size="11" fill="#0071c2">■ 파랑: 분석·풀이 흐름</text>
+      </svg>
+      </div>
+    </div>
+
+    <!-- 2. 시나리오 -->
+    <div class="sec">
+      <h2><span class="n">2</span>침해 시나리오</h2>
+      <p class="sub">하나의 로그 뭉치에 여러 사건이 섞여 있습니다. 일부는 이어지는 <b>공격 체인</b>, 일부는 판단력을 시험하는 <b>미끼</b>입니다.</p>
+      <table>
+        <tr><th>#</th><th>스토리라인</th><th>성격</th><th>핵심 로그</th></tr>
+        <tr><td>A</td><td>SSH 브루트포스 → 웹셸(search.php) → 페이로드 다운로드 → cron 지속성 → /usr/bin/backup 변조</td><td><span class="tag chain">체인</span></td><td>auth · access · audit · cron</td></tr>
+        <tr><td>B</td><td>야간 sudoers.d 백도어 등록 (NOPASSWD 권한 상승) — A와 동일 공격자</td><td><span class="tag chain">체인</span></td><td>auth · audit</td></tr>
+        <tr><td>E</td><td>파일 압축(tar) 후 외부 유출(curl → 198.51.100.47) — 체인의 마지막</td><td><span class="tag chain">체인</span></td><td>access · audit</td></tr>
+        <tr><td>C</td><td>스캐너 정찰 (sqlmap UA, 다수 404, 방화벽 포트스캔 차단) — 실제 침해 아님</td><td><span class="tag decoy">미끼</span></td><td>access · error · ufw</td></tr>
+        <tr><td>D</td><td>정상 관리자(opsadmin)의 야간 배포 cron — 공격처럼 보이나 정상</td><td><span class="tag decoy">미끼</span></td><td>auth · cron</td></tr>
+        <tr><td>F</td><td>반복 로그인 실패 후 계정 잠금 — 방어가 작동, 대응 불필요</td><td><span class="tag decoy">미끼</span></td><td>auth</td></tr>
+      </table>
+      <p><b>공격 체인 A → B → E</b> 는 동일 공격자(<code>198.51.100.23</code> / 계정 <code>webadmin</code>)의 침투→권한상승→정보유출로 이어집니다.
+      C·D·F 는 서로 무관한 노이즈로, "알림이 떴다고 다 대응하는 게 아니다"라는 판단을 훈련합니다.</p>
+    </div>
+
+    <!-- 3. 로그 소스 -->
+    <div class="sec">
+      <h2><span class="n">3</span>로그 소스 읽는 법</h2>
+      <table>
+        <tr><th>로그</th><th>무엇이 보이나</th><th>의심 포인트</th></tr>
+        <tr><td><code>access.log</code></td><td>웹 요청(IP·시각·URL·상태·UA)</td><td>URL의 <code>cmd=</code> 파라미터 = 웹셸 명령 실행</td></tr>
+        <tr><td><code>error.log</code></td><td>웹 서버 오류·없는 파일 접근</td><td>다수 "File does not exist" = 스캔 흔적</td></tr>
+        <tr><td><code>auth.log</code></td><td>SSH·sudo 인증</td><td>다수 Failed 후 Accepted = 브루트포스 성공</td></tr>
+        <tr><td><code>audit/audit.log</code></td><td>프로세스 실행(execve)·파일 변경</td><td><code>key=</code> 값(webshell_exec / priv_esc / cron_persist / bin_tamper)</td></tr>
+        <tr><td><code>cron.log</code></td><td>예약작업 등록·실행</td><td>비정상 경로(/tmp/...) 반복 실행 = 지속성</td></tr>
+        <tr><td><code>ufw.log</code></td><td>방화벽 차단</td><td>한 IP가 여러 포트 = 포트 스캔</td></tr>
+        <tr><td><code>mail.log</code></td><td>메일 송수신</td><td>대부분 정상 노이즈</td></tr>
+      </table>
+    </div>
+
+    <!-- 4. 방법론 -->
+    <div class="sec">
+      <h2><span class="n">4</span>분석 방법론 — 어떻게 접근하는가</h2>
+      <ol class="steps">
+        <li><b>기점 잡기</b> — 인증 로그에서 "다수 실패 후 성공"을 찾아 최초 침투 시각·IP·계정을 확정합니다.</li>
+        <li><b>피벗(pivot)</b> — 그 IP/계정을 <code>data.srcip</code>·<code>data.dstuser</code>로 필터해 같은 주체의 다른 행위를 모읍니다.</li>
+        <li><b>시간축 연결</b> — 웹셸 배치 → 명령 실행 → 다운로드 → 지속성 → 변조 → 권한상승 → 유출을 시간순으로 잇습니다.</li>
+        <li><b>교차 확인</b> — access.log의 요청과 audit.log의 프로세스 실행을 같은 시각으로 대조해 "정말 실행됐는지" 확인합니다.</li>
+        <li><b>미끼 걸러내기</b> — 알림/이상 로그가 실제 침해로 이어졌는지(성공 응답·후속 행위) 따져 대응 우선순위를 정합니다.</li>
+      </ol>
+      <div class="note">💡 <b>핵심 관점</b> — SOC 분석은 "알림 개수"가 아니라 "조사 후 대응이 필요한가"로 판단합니다.
+      정찰(C)·정상업무(D)·방어성공(F)은 흔적이 남아도 대응이 불필요할 수 있습니다.</div>
+    </div>
+
+    <!-- 5. Wazuh 사용법 -->
+    <div class="sec">
+      <h2><span class="n">5</span>Wazuh 사용법 (빠른 참조)</h2>
+      <ol class="steps">
+        <li><b>접속</b> — <span class="kbd">https://이_서버_IP</span> → 계정 <code>admin</code> 으로 로그인.</li>
+        <li><b>Discover</b> 메뉴 → 인덱스 패턴 <code>wazuh-alerts-*</code>(탐지 알림) 또는 <code>wazuh-archives-*</code>(모든 로그 검색).</li>
+        <li><b>저장된 검색</b>(Open) — <b>🌐 웹 접근 로그</b>, <b>🔐 인증 로그</b>, <b>🧱 방화벽 로그</b>, <b>🚨 탐지 알림</b> 을 열면 깔끔한 컬럼으로 바로 봅니다.</li>
+        <li><b>검색 예시</b> — <code>data.srcip:"198.51.100.23"</code> · <code>rule.id:100101</code> · <code>full_log:"search.php"</code></li>
+      </ol>
+      <h3>대표 탐지 룰</h3>
+      <table>
+        <tr><th>rule.id</th><th>의미</th></tr>
+        <tr><td>100101</td><td>웹셸 명령 실행 시도 (URL cmd=)</td></tr>
+        <tr><td>100102</td><td>웹 스캐너(sqlmap)</td></tr>
+        <tr><td>100110</td><td>웹서비스 계정 프로세스 실행(웹셸 경유)</td></tr>
+        <tr><td>100111 / 100112 / 100113</td><td>권한상승 / cron지속성 / 바이너리변조</td></tr>
+      </table>
+    </div>
+
+    <!-- 6. 주의점 -->
+    <div class="sec">
+      <h2><span class="n">6</span>주의점</h2>
+      <ul>
+        <li><b>시간 필터 함정</b> — 로그는 기준 시각(포털 상단 표기) 이전 24시간에 분포합니다. Discover가 비어 보이면 우측 상단 시간 범위를 <b>Last 1 year</b> 로 넓히세요.</li>
+        <li><b>알림 ≠ 침해</b> — 미끼(C·D·F)도 알림/이상 로그를 남깁니다. 조사 후 대응 필요성으로 판단하세요.</li>
+        <li><b>안전한 실습</b> — 모든 공격 아티팩트(웹셸·백도어·변조 바이너리)는 <b>실행되지 않는 더미</b>입니다. 실제 악성코드가 아닙니다.</li>
+        <li><b>답안 형식</b> — 포털의 "답안 형식"에 맞춰 입력하세요(시각 <span class="kbd">HH:MM:SS</span>, IP <span class="kbd">xxx.xxx.xxx.xxx</span>). 오답은 감점, 힌트는 소폭 감점됩니다.</li>
+      </ul>
+    </div>
+
+    <p style="text-align:center;color:var(--ink3);font-size:12px;margin:24px 0">브릿지웍스 시큐리티 · 위협 탐지 실습 교안</p>
+  </div>
+</body>
+</html>

@@ -15,6 +15,8 @@ TARGETS = [   # (location, log_format)
     ("/var/log/auth.log",           "syslog"),
     ("/var/log/cron.log",           "syslog"),
     ("/var/log/audit/audit.log",    "audit"),
+    ("/var/log/ufw.log",            "syslog"),
+    ("/var/log/mail.log",           "syslog"),
     ("/var/log/syslog",             "syslog"),
 ]
 LOCS = {loc for loc, _ in TARGETS}

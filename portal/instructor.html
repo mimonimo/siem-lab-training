@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>강사 콘솔 · SIEM 미션</title>
+<style>
+  :root{--navy:#122a4a;--blue:#1f5fbf;--accent:#0e9f6e;--bg:#eef2f7;--card:#fff;
+    --line:#d7dee8;--text:#1c2733;--mut:#5b6b7c;--ok:#0e9f6e;--no:#c0392b;--warn:#b8842a;}
+  *{box-sizing:border-box} body{margin:0;font-family:"Malgun Gothic","맑은 고딕",-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+  .top{background:var(--navy);color:#fff;padding:11px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20}
+  .brand{font-weight:700;display:flex;gap:9px;align-items:center}
+  .brand .mk{width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,var(--warn),var(--no));display:flex;align-items:center;justify-content:center}
+  .btn{border:0;border-radius:8px;padding:8px 13px;font-size:13px;font-weight:600;cursor:pointer;background:var(--blue);color:#fff}
+  .btn.ghost{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35)}
+  .btn.sm{padding:5px 10px;font-size:12px}
+  .wrap{max-width:980px;margin:20px auto;padding:0 16px}
+  .gate{max-width:400px;margin:12vh auto;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:28px;text-align:center}
+  .gate h1{font-size:19px;margin:0 0 6px} .gate p{color:var(--mut);font-size:13px;margin:0 0 16px}
+  .gate input{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:9px;font-size:15px;margin-bottom:10px}
+  .gate .err{color:var(--no);font-size:13px;min-height:18px;font-weight:600}
+  .tabs{display:flex;gap:8px;margin-bottom:14px}
+  .tabs button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 15px;font-size:14px;font-weight:600;cursor:pointer;color:var(--mut)}
+  .tabs button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:14px 16px;margin-bottom:11px}
+  .qh{display:flex;gap:9px;align-items:flex-start}
+  .qno{flex:none;width:28px;height:28px;border-radius:7px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+  .badges{display:flex;gap:6px;flex-wrap:wrap;margin:1px 0 7px}
+  .badges span{font-size:11px;border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:var(--mut)}
+  .badges .man{border-color:var(--warn);color:var(--warn)} .badges .auto{border-color:var(--ok);color:var(--ok)}
+  .qtext{font-weight:600;margin-bottom:8px}
+  .kv{font-size:13px;line-height:1.7} .kv b{color:var(--navy)}
+  .kv code{background:#eef3fb;border-radius:4px;padding:1px 5px;font-family:Consolas,monospace}
+  .ans{background:#f2fbf7;border:1px solid #bfe6d3;border-radius:8px;padding:8px 10px;margin:6px 0;font-size:13px}
+  .hintlist{color:var(--warn);font-size:12.5px;margin-top:4px}
+  table{width:100%;border-collapse:collapse;font-size:13px;background:#fff}
+  th,td{border:1px solid var(--line);padding:6px 8px;text-align:left} th{background:#f4f7fb}
+  .st-correct{color:var(--ok);font-weight:600}.st-wrong{color:var(--no)}.st-manual{color:var(--warn)}.st-graded{color:var(--blue);font-weight:600}
+  .lb{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .lb .chip{background:#fff;border:1px solid var(--line);border-radius:20px;padding:5px 12px;font-size:13px}
+  .hidden{display:none}
+  input.award{width:56px;padding:3px 6px;border:1px solid var(--line);border-radius:6px}
+</style>
+</head>
+<body>
+  <div class="top">
+    <div class="brand"><span class="mk">🔐</span>강사 콘솔 <small style="opacity:.6;font-weight:400">SIEM 미션</small></div>
+    <div id="topr"></div>
+  </div>
+
+  <div id="gate" class="gate">
+    <h1>강사 인증</h1>
+    <p>강사 패스코드를 입력하세요.</p>
+    <input id="keyInput" type="password" placeholder="강사 패스코드">
+    <div class="err" id="gateErr"></div>
+    <button class="btn" id="gateBtn" style="width:100%">입장</button>
+  </div>
+
+  <div id="app" class="wrap hidden">
+    <div class="tabs">
+      <button id="tabSol" class="on">📘 문제 풀이 해설</button>
+      <button id="tabSub">📊 제출 현황 · 채점</button>
+      <button id="tabUnl">🔓 해금 관리</button>
+    </div>
+    <div id="solView"></div>
+    <div id="subView" class="hidden"></div>
+    <div id="unlockView" class="hidden"></div>
+  </div>
+
+<script>
+const $=s=>document.querySelector(s);
+let KEY="", SOL=null;
+async function jget(u){ const r=await fetch(u); return {ok:r.ok, d:await r.json()}; }
+async function jpost(u,b){ const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}); return {ok:r.ok,d:await r.json()}; }
+function esc(s){return (s||'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+$('#gateBtn').onclick=enter;
+$('#keyInput').addEventListener('keydown',e=>{if(e.key==='Enter')enter();});
+async function enter(){
+  KEY=$('#keyInput').value.trim(); if(!KEY)return;
+  const {ok,d}=await jget('/api/instructor/solutions?key='+encodeURIComponent(KEY));
+  if(!ok){ $('#gateErr').textContent='패스코드가 올바르지 않습니다'; return; }
+  SOL=d; $('#gate').classList.add('hidden'); $('#app').classList.remove('hidden');
+  $('#topr').innerHTML='<button class="btn ghost sm" onclick="window.open(\'/guide\',\'_blank\')">📘 교안</button> <button class="btn ghost sm" onclick="location.reload()">잠금</button>';
+  renderSolutions();
+}
+$('#tabSol').onclick=()=>switchTab('sol');
+$('#tabSub').onclick=()=>switchTab('sub');
+$('#tabUnl').onclick=()=>switchTab('unl');
+function switchTab(t){
+  $('#tabSol').classList.toggle('on',t==='sol'); $('#tabSub').classList.toggle('on',t==='sub'); $('#tabUnl').classList.toggle('on',t==='unl');
+  $('#solView').classList.toggle('hidden',t!=='sol'); $('#subView').classList.toggle('hidden',t!=='sub'); $('#unlockView').classList.toggle('hidden',t!=='unl');
+  if(t==='sub') renderSubs();
+  if(t==='unl') renderUnlock();
+}
+async function renderUnlock(){
+  const {ok,d}=await jget('/api/instructor/users?key='+encodeURIComponent(KEY));
+  if(!ok){ $('#unlockView').innerHTML='<div class="card">권한 오류</div>'; return; }
+  const ns=d.num_stages;
+  const opts=(sel)=>{let o='<option value="0"'+(sel===0?' selected':'')+'>자동</option>';
+    for(let s=1;s<=ns;s++) o+=`<option value="${s}"${sel===s?' selected':''}>${s}단계까지</option>`; return o;};
+  const head=`<div class="card"><b>단계별 해금</b> · 각 단계의 60% 완료 시 다음 단계 자동 해금. 강사가 사용자별로 강제 해금(오버라이드) 가능.<br>
+    <span style="color:var(--mut);font-size:12px">단계: ${d.stage_names.map((n,i)=>`${n}(${d.stage_totals[i]}문항)`).join(' · ')}</span></div>`;
+  const rows=d.users.map(u=>`<tr>
+    <td><b>${esc(u.team)}</b></td>
+    <td>현재 <b style="color:var(--pri)">${u.unlocked}단계</b></td>
+    <td>${u.stage_done.map((c,i)=>`${i+1}:${c}/${d.stage_totals[i]}`).join(' · ')}</td>
+    <td>${u.score}점</td>
+    <td><select id="ov_${esc(u.team)}">${opts(u.override)}</select>
+        <button class="btn sm" onclick="setUnlock('${esc(u.team)}')">적용</button></td>
+  </tr>`).join('');
+  $('#unlockView').innerHTML=head+`<div class="card" style="padding:0;overflow-x:auto"><table>
+    <tr><th>학생</th><th>해금 상태</th><th>단계별 완료</th><th>점수</th><th>강제 해금(오버라이드)</th></tr>${rows}</table></div>`;
+}
+window.setUnlock=async(team)=>{
+  const v=+document.getElementById('ov_'+team).value;
+  await jpost('/api/instructor/unlock',{key:KEY,team,stage:v});
+  renderUnlock();
+};
+
+function renderSolutions(){
+  const sc=SOL.scoring;
+  let head=`<div class="card"><b>배점 규칙</b> · 오답 -${sc.wrong}점 / 힌트 -${sc.hint}점(최대 ${sc.max_hints}개) · 필수 ${SOL.max_required}점 + 보너스 ${SOL.max_bonus}점</div>`;
+  const cards=SOL.questions.map(q=>{
+    const man=q.grade.mode==='manual';
+    const hints=(q.hints||[]).map((h,i)=>`${i+1}) ${esc(h)}`).join('<br>');
+    const gr = man?'수동채점': (q.grade.mode+' · 정답토큰: '+(q.grade.accept||[]).join(', ')+(q.grade.n?` (${q.grade.n}개↑)`:''));
+    return `<div class="card"><div class="qh"><div class="qno">${q.qno}</div><div style="flex:1">
+      <div class="badges"><span>${q.section}</span><span>${esc(q.type)}</span><span>난이도 ${q.diff}</span><span>${q.score}점</span>
+        <span class="${man?'man':'auto'}">${man?'수동채점':'자동채점'}</span></div>
+      <div class="qtext">${esc(q.question)}</div>
+      <div class="ans"><b>✅ 정답:</b> ${esc(q.answer)}</div>
+      <div class="kv"><b>근거:</b> ${esc(q.explain.evidence)}<br>
+        <b>조회:</b> <code>${esc(q.explain.wazuh)}</code><br>
+        <b>채점:</b> ${esc(gr)}</div>
+      <div class="hintlist"><b>힌트</b><br>${hints}</div>
+    </div></div></div>`;
+  }).join('');
+  $('#solView').innerHTML=head+cards;
+}
+
+async function renderSubs(){
+  const {ok,d}=await jget('/api/instructor/submissions?key='+encodeURIComponent(KEY));
+  if(!ok){ $('#subView').innerHTML='<div class="card">권한 오류</div>'; return; }
+  const lb=await jget('/api/leaderboard');
+  const chips=(lb.d.board||[]).map((r,i)=>`<span class="chip">${i+1}. <b>${esc(r.team)}</b> · ${r.score}점 · ${r.solved}✓</span>`).join('') || '<span class="chip">아직 제출 없음</span>';
+  const rows=d.subs.map(s=>{
+    const stc={correct:'st-correct',wrong:'st-wrong',manual:'st-manual',graded:'st-graded'}[s.status]||'';
+    const act = s.manual && s.status!=='graded'
+      ? `<input class="award" id="aw_${esc(s.team)}_${s.qno}" type="number" min="0" max="${s.max}" value="${s.max}"> <button class="btn sm" onclick="award('${esc(s.team)}',${s.qno})">채점</button>`
+      : '';
+    return `<tr><td>${esc(s.team)}</td><td>${s.qno}</td><td class="${stc}">${s.status}</td>
+      <td>${s.score}/${s.max}</td><td>힌트${s.hints_used}·오답${s.wrong_count}</td>
+      <td style="max-width:260px">${esc(s.answer)}</td><td>${act}</td></tr>`;
+  }).join('');
+  $('#subView').innerHTML=`<div class="lb">${chips}</div>
+    <div class="card" style="padding:0;overflow-x:auto"><table>
+    <tr><th>학생</th><th>문항</th><th>상태</th><th>점수</th><th>기록</th><th>답안</th><th>수동채점</th></tr>
+    ${rows||'<tr><td colspan=7 style="text-align:center;color:#888">제출 없음</td></tr>'}</table></div>
+    <div style="margin-top:8px"><button class="btn sm" onclick="renderSubs()">새로고침</button></div>`;
+}
+window.award=async(team,qno)=>{
+  const v=+document.getElementById(`aw_${team}_${qno}`).value;
+  await jpost('/api/instructor/grade',{key:KEY,team,qno,award:v});
+  renderSubs();
+};
+</script>
+</body>
+</html>
