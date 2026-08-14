@@ -69,6 +69,21 @@ sudo python3 /opt/siem-lab/scripts/config_dashboard.py   # 인덱스패턴 3개+
 - 재빌드는 대량 로그를 **청크로 나눠 천천히 적재**합니다(로그수집기→분석엔진 큐 1024 한계 초과 시 유실 방지). 다른 서버로 옮겨 재빌드해도 전량 적재됩니다.
 - MISS로 보이는 소수 문항(공격 지속시간=시각 계산, 로그소스 나열=location 필드, 데모 문항)은 **설계상 파생답**으로 정상입니다.
 
-## 9. 배포/이관
-- 이 환경은 GitHub 스크립트로 **다른 서버에서 통째로 재빌드** 가능(README의 `build_all.sh`).
+## 9. 배포/이관 · 업데이트 반영
+- **최초 구축(새 서버)**: GitHub clone 후 `sudo bash build_all.sh` (Wazuh 포함 통째로, 25~35분).
+- **이후 업데이트 반영(운영 중 서버)**: build_all을 다시 돌리지 마세요(Wazuh 재설치·학생기록 삭제됨). 대신:
+  ```
+  cd <repo> && git pull
+  sudo bash update.sh <모드>        # portal | bank | dash | data | rules | all
+  ```
+  | 모드 | 언제 | 반영 대상 |
+  |---|---|---|
+  | `portal` | UI/서버만 바꿈 | portal_app.py·*.html 배포+재시작(기본, 즉시) |
+  | `bank` | 문제/채점 바꿈 | mission_bank_gen.py 재생성 |
+  | `dash` | 대시보드 설정 | config_dashboard.py |
+  | `data` | 로그/시나리오 바꿈 | 90_finalize 클린 재적재(3~4분)+대시보드 |
+  | `rules` | Wazuh 커스텀 룰 | local_rules.xml 재적용+재적재 |
+  | `all` | 로그+문제+대시보드 한 번에 | data+dash |
+  - **portal.db(학생 진행·Q&A)는 모든 모드에서 보존**됩니다. 새 기수 시작 시에는 강사 콘솔 → 사용자·해금 → "전체 초기화".
+- **네트워크(외부 접속)**: VMware를 **Bridged**로 두면 VM이 LAN IP를 받습니다(`hostname -I`로 확인). 포털은 접속 주소(`location.hostname`)에 자동으로 맞추므로 IP 하드코딩이 없습니다. 방화벽에서 **8081·443·8080·22** 개방 필요(`sudo ufw status`; 활성 시 `sudo ufw allow 8081,443,8080,22/tcp`). Wazuh(:443)는 자체 서명 인증서라 브라우저 경고 → "고급 → 계속"으로 진행.
 - 정답키·채점스펙은 비공개로 관리. 학생에겐 포털 접속만 제공.
