@@ -258,7 +258,7 @@
 </head>
 <body>
   <header class="hdr"><div class="hdr-in">
-    <div class="brand"><span class="mk">B</span><span>Bridgeworks Security <small>· 위협 탐지 실습</small></span></div>
+    <div class="brand" style="cursor:pointer" title="홈으로" onclick="window.scrollTo({top:0,behavior:'smooth'})"><span class="mk">B</span><span>Bridgeworks Security <small>· 위협 탐지 실습</small></span></div>
     <div class="hdr-r" id="hdrR"></div>
   </div></header>
 
@@ -317,6 +317,15 @@ function fallbackCopy(t){const ta=document.createElement('textarea');ta.value=t;
   ta.focus();ta.select();ta.setSelectionRange(0,t.length);let ok=false;try{ok=document.execCommand('copy');}catch(e){}
   document.body.removeChild(ta);return Promise.resolve(ok);}
 
+/* 문항 성격에 맞는 교안 섹션으로 안내 (첫 페이지가 아니라 관련 부분) */
+function guideAnchor(q){
+  const t=(q.type||''), sl=(q.sl||'');
+  if(/Wazuh/i.test(t)) return 's6';            // Wazuh 실전·인덱스패턴·DQL
+  if(/상관|교차|종합/.test(t)) return 's7';     // 실전 예제(공격 체인 워크스루)
+  if(/미끼|판단|오탐/.test(t)) return 's2';      // 침해 시나리오 — 미끼 상세
+  if(/Wazuh|직접|미끼/.test(t)===false && /A|B|E/.test(sl)) return 's2';
+  return 's2';                                  // 기본: 침해 시나리오 상세(체인·근거 로그)
+}
 async function boot(){CFG=await jget('/api/config');
   if(CFG.team)enterMission(); else $('#loginView').classList.remove('hidden');}
 $('#startBtn').onclick=async()=>{
@@ -398,7 +407,7 @@ function qCard(q){
     <div class="qb">
       <div class="badges">${badge(q)}</div>
       <div class="qtext">${esc(q.question)}</div>
-      ${q.primer?`<div class="primer"><b>이해 돕기</b> · ${esc(q.primer)}<a href="/guide" target="_blank">교안 ↗</a></div>`:''}
+      ${q.primer?`<div class="primer"><b>이해 돕기</b> · ${esc(q.primer)}<a href="/guide#${guideAnchor(q)}" target="_blank">교안에서 자세히 ↗</a></div>`:''}
       <div class="hints">${hintsHtml(st)}</div>
       <div class="fmt">답안 형식 · <b>${esc(q.fmt||'')}</b></div>
       <div class="ansrow">${field}<button class="submit" ${solved?'disabled':''}>제출</button></div>
