@@ -67,6 +67,9 @@ def db():
             ts REAL, PRIMARY KEY(team,qno))""")
         g.db.execute("""CREATE TABLE IF NOT EXISTS umeta(
             team TEXT PRIMARY KEY, override INTEGER DEFAULT 0)""")
+        g.db.execute("""CREATE TABLE IF NOT EXISTS qna(
+            id INTEGER PRIMARY KEY AUTOINCREMENT, author TEXT, role TEXT,
+            body TEXT, qno INTEGER DEFAULT 0, parent INTEGER DEFAULT 0, ts REAL)""")
     return g.db
 
 # --------------------------------------------------------- staged unlock --- #
@@ -138,7 +141,7 @@ def final_score(base, wrongs, hints, correct):
 # ------------------------------------------------------- client-safe view -- #
 def public_q(q):
     out = {k: q.get(k) for k in ("qno","section","type","sl","diff","score",
-                                 "discuss","question","fmt")}
+                                 "discuss","question","fmt","primer")}
     out["auto"] = q["grade"]["mode"] != "manual"
     out["max_hints"] = MAX_HINTS
     return out
@@ -171,7 +174,7 @@ def api_config():
                    max_bonus=sum(q["score"] for q in SPEC["questions"] if q["section"]=="보너스"),
                    wazuh_url=WAZUH_URL, wazuh_user=WAZUH_USER, wazuh_pass=WAZUH_PASS,
                    team=session.get("team"), role=session.get("role"),
-                   dataset_time=SPEC.get("generated_at", ""),
+                   dataset_time=SPEC.get("generated_at", ""), user_count=USER_COUNT,
                    wrong_penalty=WRONG_PENALTY, hint_penalty=HINT_PENALTY, max_hints=MAX_HINTS)
 
 @app.route("/api/login", methods=["POST"])
@@ -199,7 +202,7 @@ def api_questions():
         stg = stage_of(q["qno"]); locked = stg > unlocked
         pq = public_q(q); pq["stage"] = stg; pq["locked"] = locked
         if locked:                       # hide content until the stage opens
-            pq["question"] = None; pq["fmt"] = None; pq["state"] = None
+            pq["question"] = None; pq["fmt"] = None; pq["primer"] = None; pq["state"] = None
         else:
             pq["state"] = state_of(team, q["qno"]) if team else None
         qs.append(pq)
@@ -212,7 +215,7 @@ def api_questions():
 @app.route("/api/hint", methods=["POST"])
 def api_hint():
     team = session.get("team")
-    if not team: return jsonify(error="먼저 로그인하세요"), 401
+    if not team: return jsonify(error="먼저 로그인해 주세요"), 401
     qno = int((request.json or {}).get("qno", 0))
     if qno not in QByNo: return jsonify(error="잘못된 문항"), 400
     if stage_of(qno) > unlocked_stage(team):
@@ -235,7 +238,7 @@ def api_hint():
 @app.route("/api/submit", methods=["POST"])
 def api_submit():
     team = session.get("team")
-    if not team: return jsonify(error="먼저 로그인하세요"), 401
+    if not team: return jsonify(error="먼저 로그인해 주세요"), 401
     d = request.json or {}
     qno = int(d.get("qno", 0)); answer = (d.get("answer","") or "").strip()[:500]
     if qno not in QByNo: return jsonify(error="잘못된 문항"), 400
@@ -352,6 +355,67 @@ def api_instr_grade():
     with _lock:
         upsert(team, qno, status="graded", score=final, hints_used=hints)
     return jsonify(ok=True, score=final)
+
+def _qna_identity():
+    """Who is posting: instructor (session role or passcode key) or a student team."""
+    if session.get("role") == "instructor" or _auth_instr():
+        return ("강사", "instructor")
+    t = session.get("team")
+    if t: return (t, "student")
+    return (None, None)
+
+@app.route("/api/qna")
+def api_qna_list():
+    name, role = _qna_identity()
+    if not name: return jsonify(error="먼저 로그인해 주세요"), 401
+    rows = db().execute("SELECT id,author,role,body,qno,parent,ts FROM qna "
+                        "ORDER BY id ASC").fetchall()
+    posts = [dict(id=r["id"], author=r["author"], role=r["role"], body=r["body"],
+                  qno=r["qno"], parent=r["parent"], ts=r["ts"]) for r in rows]
+    return jsonify(posts=posts, me=name, is_instr=(role == "instructor"))
+
+@app.route("/api/qna", methods=["POST"])
+def api_qna_post():
+    name, role = _qna_identity()
+    if not name: return jsonify(error="먼저 로그인해 주세요"), 401
+    d = request.json or {}
+    body = (d.get("body", "") or "").strip()[:1000]
+    if not body: return jsonify(error="내용을 입력해 주세요"), 400
+    qno = int(d.get("qno", 0) or 0); parent = int(d.get("parent", 0) or 0)
+    with _lock:
+        db().execute("INSERT INTO qna(author,role,body,qno,parent,ts) "
+                     "VALUES(?,?,?,?,?,?)", (name, role, body, qno, parent, time.time()))
+        db().commit()
+    return jsonify(ok=True)
+
+@app.route("/api/qna/delete", methods=["POST"])
+def api_qna_delete():
+    if not _auth_instr(): return jsonify(error="unauthorized"), 403
+    pid = int((request.json or {}).get("id", 0))
+    with _lock:
+        db().execute("DELETE FROM qna WHERE id=? OR parent=?", (pid, pid))
+        db().commit()
+    return jsonify(ok=True)
+
+@app.route("/api/instructor/reset", methods=["POST"])
+def api_instr_reset():
+    """Reset a user's progress (submissions + scores + hints + unlock override)
+    so the lab can be re-run. team='*' resets every user."""
+    if not _auth_instr(): return jsonify(error="unauthorized"), 403
+    d = request.json or {}
+    team = (d.get("team") or "").strip()
+    if not team: return jsonify(error="bad request"), 400
+    with _lock:
+        if team in ("*", "__ALL__"):
+            n = db().execute("SELECT COUNT(DISTINCT team) c FROM sub").fetchone()["c"]
+            db().execute("DELETE FROM sub")
+            db().execute("DELETE FROM umeta")
+            db().commit()
+            return jsonify(ok=True, scope="all", cleared=n)
+        db().execute("DELETE FROM sub WHERE team=?", (team,))
+        db().execute("DELETE FROM umeta WHERE team=?", (team,))
+        db().commit()
+    return jsonify(ok=True, team=team)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORTAL_PORT", "8081")))

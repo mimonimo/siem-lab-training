@@ -152,6 +152,9 @@
   .badges .man{color:var(--amber);background:var(--amber-wash);border-color:var(--amber-bd)}
   .badges .disc{color:#7c3aed;background:#f3eeff;border-color:#ddd0f7}
   .qtext{font-size:15.5px;font-weight:700;line-height:1.55;letter-spacing:-.2px;color:var(--ink)}
+  .primer{margin-top:9px;font-size:12.5px;color:var(--ink2);background:linear-gradient(180deg,var(--pri-wash),#fff);
+    border:1px solid var(--pri-bd);border-radius:10px;padding:9px 12px;line-height:1.65}
+  .primer b{color:var(--pri-d)} .primer a{font-weight:700;white-space:nowrap;margin-left:4px}
   .hints{margin-top:11px;display:flex;flex-direction:column;gap:6px}
   .hintline{display:flex;gap:9px;background:var(--amber-wash);border:1px solid var(--amber-bd);border-radius:10px;
     padding:9px 12px;font-size:12.5px;color:#6b4e12;line-height:1.55;animation:pop .24s ease}
@@ -198,6 +201,41 @@
   .lbrow:nth-child(1) .rk{background:linear-gradient(140deg,#ffd75e,#f5a623);color:#7a5600}
   .lbrow:nth-child(2) .rk{background:#e2e8f0}.lbrow:nth-child(3) .rk{background:#f0dcc8;color:#8a5a30}
   .lbrow .nm{flex:1;font-weight:700;font-size:14px} .lbrow .pt{font-size:13px;color:var(--ink2);font-variant-numeric:tabular-nums}
+
+  /* ---------- question navigator ---------- */
+  .qnav{position:sticky;top:66px;z-index:20;background:rgba(255,255,255,.92);backdrop-filter:saturate(180%) blur(8px);
+    border:1px solid var(--bd);border-radius:var(--r-md);box-shadow:var(--sh-sm);padding:10px 13px;margin-bottom:16px}
+  .qnav .nt{font-size:11px;font-weight:700;color:var(--ink3);margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .qnav .nt .lg{display:inline-flex;align-items:center;gap:4px}
+  .qnav .sw{width:11px;height:11px;border-radius:3px;display:inline-block;border:1px solid var(--bd)}
+  .qnav .grid{display:flex;flex-wrap:wrap;gap:6px}
+  .qchip{width:31px;height:31px;border-radius:8px;border:1px solid var(--bd);background:var(--panel);color:var(--ink2);
+    font-size:12.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.14s;font-variant-numeric:tabular-nums}
+  .qchip:hover{transform:translateY(-1px);border-color:var(--pri);color:var(--pri)}
+  .qchip.solved{background:linear-gradient(140deg,var(--emer),#0ea5a4);color:#fff;border-color:transparent}
+  .qchip.done{background:var(--amber);color:#fff;border-color:transparent}
+  .qchip.locked{background:var(--panel3);color:var(--ink3);cursor:not-allowed;opacity:.7}
+  .qchip.bon{border-style:dashed}
+  .q{scroll-margin-top:124px}
+  .q.flash{animation:flash 1.1s ease}
+  @keyframes flash{0%,40%{box-shadow:0 0 0 3px var(--pri-wash),var(--sh-md)}100%{box-shadow:var(--sh-sm)}}
+
+  /* ---------- Q&A board ---------- */
+  .drawer .panel.wide{width:452px}
+  .qna-list{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+  .qpost{border:1px solid var(--bd);border-radius:11px;padding:10px 12px;background:var(--panel2)}
+  .qpost.reply{margin-left:22px;background:var(--emer-wash);border-color:var(--emer-bd)}
+  .qpost .ph{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;margin-bottom:4px}
+  .qpost .ph .who{color:var(--ink)}
+  .qpost .ph .rl{font-size:9.5px;font-weight:750;padding:1px 7px;border-radius:20px;background:var(--pri-wash);color:var(--pri)}
+  .qpost .ph .rl.instr{background:var(--emer-wash);color:var(--emer)}
+  .qpost .ph .tm{color:var(--ink3);font-weight:500;font-size:11px;margin-left:auto}
+  .qpost .bd{font-size:13px;color:var(--ink);line-height:1.6;white-space:pre-wrap;word-break:break-word}
+  .qpost .rbtn{font-size:11px;color:var(--pri);cursor:pointer;font-weight:700;margin-top:6px;display:inline-block}
+  .qna-compose{display:flex;flex-direction:column;gap:8px}
+  .qna-compose textarea{width:100%;padding:10px 12px;border:1.5px solid var(--bd2);border-radius:10px;font-size:13px;
+    font-family:inherit;background:var(--panel2);outline:none;resize:vertical;min-height:66px;color:var(--ink)}
+  .qna-compose textarea:focus{border-color:var(--pri);background:#fff;box-shadow:var(--ring)}
   .hidden{display:none!important}
   @media(max-width:720px){.tiles{grid-template-columns:1fr 1fr}}
 </style>
@@ -212,7 +250,7 @@
     <div class="login">
       <div class="ic">🛡</div>
       <h1>위협 탐지 미션</h1>
-      <p class="sub">배정받은 계정으로 로그인해 실습을 시작하세요.</p>
+      <p class="sub">배정받은 계정으로 로그인하면 실습이 시작됩니다.</p>
       <div class="fld"><label>아이디</label><input id="userInput" placeholder="user_1" autocomplete="username"></div>
       <div class="fld"><label>비밀번호</label><input id="passInput" type="password" placeholder="••••••" autocomplete="current-password"></div>
       <div id="loginErr"></div>
@@ -230,9 +268,20 @@
       <div class="tile prog"><div class="top"><span>필수 구간 진행률</span><span class="num" id="reqPct">0%</span></div><div class="bar"><i id="reqBar"></i></div></div>
     </div>
     <div id="stagesStrip" class="stages"></div>
+    <div id="qnav" class="qnav"></div>
     <div id="reqWrap"></div>
     <div id="bonWrap"></div>
   </div>
+
+  <div class="drawer" id="qnaDrawer"><div class="panel wide">
+    <h3>💬 문의 게시판 <span class="x" id="qnaX">×</span></h3>
+    <p style="font-size:12px;color:var(--ink3);margin:-6px 0 12px">궁금한 점을 남기면 강사와 다른 학생이 함께 볼 수 있습니다.</p>
+    <div class="qna-list" id="qnaList"></div>
+    <div class="qna-compose">
+      <textarea id="qnaText" placeholder="궁금한 점을 남겨 주세요. (예: Q3에서 웹셸 파일을 어디서 찾나요?)"></textarea>
+      <button class="go" id="qnaSend" style="padding:11px">문의 등록</button>
+    </div>
+  </div></div>
 
 
 <script>
@@ -241,13 +290,22 @@ let CFG={}, QS=[];
 async function jget(u){const r=await fetch(u);return r.json();}
 async function jpost(u,b){const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{})});return r.json();}
 function esc(s){return (s||'').toString().replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+/* clipboard that also works over plain HTTP (navigator.clipboard needs HTTPS/localhost) */
+function copyText(t){
+  if(navigator.clipboard && window.isSecureContext){ return navigator.clipboard.writeText(t).catch(()=>fallbackCopy(t)); }
+  return fallbackCopy(t);
+}
+function fallbackCopy(t){const ta=document.createElement('textarea');ta.value=t;ta.setAttribute('readonly','');
+  ta.style.position='fixed';ta.style.top='-1000px';ta.style.opacity='0';document.body.appendChild(ta);
+  ta.focus();ta.select();ta.setSelectionRange(0,t.length);let ok=false;try{ok=document.execCommand('copy');}catch(e){}
+  document.body.removeChild(ta);return Promise.resolve(ok);}
 
 async function boot(){CFG=await jget('/api/config');
   if(CFG.role==='instructor'){location.href='/instructor';return;}
   if(CFG.team)enterMission(); else $('#loginView').classList.remove('hidden');}
 $('#startBtn').onclick=async()=>{
   const u=$('#userInput').value.trim(),p=$('#passInput').value.trim();
-  if(!u||!p){$('#loginErr').textContent='아이디와 비밀번호를 입력하세요';return;}
+  if(!u||!p){$('#loginErr').textContent='아이디와 비밀번호를 입력해 주세요';return;}
   const r=await jpost('/api/login',{username:u,password:p});
   if(r.role==='instructor'){location.href='/instructor';return;}
   if(r.team){CFG.team=r.team;enterMission();} else $('#loginErr').textContent=r.error||'로그인 실패';
@@ -261,14 +319,17 @@ function enterMission(){
   $('#hdrR').innerHTML=`<div class="chip"><span class="av">${esc(ini)}</span>${esc(CFG.team)}</div>
     <button class="hbtn pri" onclick="window.open('${wz}','_blank')">Wazuh 대시보드 ↗</button>
     <button class="hbtn" onclick="window.open('/guide','_blank')">📘 교안</button>
+    <button class="hbtn" id="qnaBtn">💬 문의</button>
     <button class="hbtn" id="logoutBtn">로그아웃</button>`;
   $('#logoutBtn').onclick=async()=>{await jpost('/api/logout');location.reload();};
+  $('#qnaBtn').onclick=openQna; $('#qnaX').onclick=closeQna; $('#qnaSend').onclick=sendQna;
+  $('#qnaDrawer').onclick=e=>{if(e.target.id==='qnaDrawer')closeQna();};
   const dt=CFG.dataset_time||''; const wu=CFG.wazuh_user||'admin', wpw=CFG.wazuh_pass||'';
   const cred = wpw ? `<span class="wzcred">🔑 Wazuh 로그인 · <b>${esc(wu)}</b> / <code>${esc(wpw)}</code>
     <button class="copybtn" id="wzCopy">복사</button></span>` : '';
   $('#ctxBar').innerHTML=`<span class="dot"></span><span>이 로그셋 기준 시각 <b>${esc(dt)}</b> · 이벤트는 <b>이전 24시간</b> 내 분포 (Wazuh 비면 <b>Last 1 year</b>)</span>
     <span class="sp"></span>${cred}`;
-  const wc=$('#wzCopy'); if(wc) wc.onclick=()=>{navigator.clipboard&&navigator.clipboard.writeText(wpw);wc.textContent='복사됨';setTimeout(()=>wc.textContent='복사',1200);};
+  const wc=$('#wzCopy'); if(wc) wc.onclick=async()=>{await copyText(wpw);wc.textContent='복사됨 ✓';setTimeout(()=>wc.textContent='복사',1200);};
   loadQuestions();
 }
 function badge(q){
@@ -310,12 +371,13 @@ function qCard(q){
   const av=esc(st.answer||'');
   const field = q.auto
     ? `<input placeholder="${esc(q.fmt||'답안 입력')}" value="${av}" ${solved?'disabled':''}>`
-    : `<textarea placeholder="${esc(q.fmt||'판단과 근거를 작성하세요')}" ${solved?'disabled':''}>${av}</textarea>`;
+    : `<textarea placeholder="${esc(q.fmt||'판단과 근거를 함께 작성해 주세요')}" ${solved?'disabled':''}>${av}</textarea>`;
   return `<div class="${cls}" data-qno="${q.qno}"><div class="q-in">
     <div class="qno">${q.qno}</div>
     <div class="qb">
       <div class="badges">${badge(q)}</div>
       <div class="qtext">${esc(q.question)}</div>
+      ${q.primer?`<div class="primer">💡 <b>이해 돕기</b> · ${esc(q.primer)}<a href="/guide" target="_blank">교안 ↗</a></div>`:''}
       <div class="hints">${hintsHtml(st)}</div>
       <div class="fmt">📝 답안 형식 · <b>${esc(q.fmt||'')}</b></div>
       <div class="ansrow">${field}<button class="submit" ${solved?'disabled':''}>제출</button></div>
@@ -326,10 +388,72 @@ function qCard(q){
 async function loadQuestions(){
   const d=await jget('/api/questions'); QS=d.questions;
   const req=QS.filter(q=>q.section==='필수'), bon=QS.filter(q=>q.section==='보너스');
-  $('#reqWrap').innerHTML=`<div class="secttl"><span class="pill">필수</span>핵심 문항<span class="ln"></span><span class="cnt">${req.length}문항 · 먼저 푸세요</span></div>`+req.map(qCard).join('');
+  $('#reqWrap').innerHTML=`<div class="secttl"><span class="pill">필수</span>핵심 문항<span class="ln"></span><span class="cnt">${req.length}문항 · 먼저 풀어보세요</span></div>`+req.map(qCard).join('');
   $('#bonWrap').innerHTML=`<div class="secttl"><span class="pill b">보너스</span>심화 문항<span class="ln"></span><span class="cnt">${bon.length}문항</span></div>`+bon.map(qCard).join('');
-  QS.forEach(q=>wireCard(q.qno)); $('#stTotal').textContent=CFG.total; renderStages(d.stages); updateSummary(d);
+  QS.forEach(q=>wireCard(q.qno)); $('#stTotal').textContent=CFG.total; renderStages(d.stages); updateSummary(d); renderNav();
+  startPoll();
 }
+function renderNav(){
+  const chip=q=>{
+    let c='qchip'; const st=q.state||{};
+    if(q.section==='보너스') c+=' bon';
+    if(q.locked) c+=' locked';
+    else if(st.status==='correct') c+=' solved';
+    else if(st.status==='manual'||st.status==='graded') c+=' done';
+    const t=q.locked?'잠김':(q.question||'').slice(0,42);
+    return `<div class="${c}" ${q.locked?'':`onclick="jumpTo(${q.qno})"`} title="${esc(t)}">${q.qno}</div>`;
+  };
+  $('#qnav').innerHTML=`<div class="nt">🧭 문항 바로가기
+      <span class="lg"><span class="sw" style="background:linear-gradient(140deg,#12a150,#0ea5a4);border-color:transparent"></span>완료</span>
+      <span class="lg"><span class="sw" style="background:#eef2f8"></span>진행 가능</span>
+      <span class="lg"><span class="sw" style="background:#eef2f8;opacity:.7"></span>🔒 잠김</span></div>
+    <div class="grid">${QS.map(chip).join('')}</div>`;
+}
+window.jumpTo=(qno)=>{const el=document.querySelector(`.q[data-qno="${qno}"]`);
+  if(el){el.scrollIntoView({behavior:'smooth',block:'start'});el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');}};
+
+/* ---- near-real-time sync: reflect instructor unlock/grade without manual refresh ---- */
+let pollT=null;
+function startPoll(){ if(pollT)return; pollT=setInterval(pollTick, 8000); }
+async function pollTick(){
+  if(document.hidden) return;
+  const d=await jget('/api/questions'); if(!d||!d.questions) return;
+  const ae=document.activeElement;
+  const activeQno=ae&&ae.closest&&ae.closest('.q')?ae.closest('.q').getAttribute('data-qno'):null;
+  const prev={}; QS.forEach(q=>prev[q.qno]=q);
+  QS=d.questions; renderStages(d.stages); updateSummary(d); renderNav();
+  QS.forEach(q=>{
+    const p=prev[q.qno]; if(!p) return;
+    const ps=p.state&&p.state.status, cs=q.state&&q.state.status;
+    if((p.locked!==q.locked || ps!==cs) && String(q.qno)!==String(activeQno)){
+      const old=document.querySelector(`.q[data-qno="${q.qno}"]`);
+      if(old){const t=document.createElement('div');t.innerHTML=qCard(q);old.replaceWith(t.firstElementChild);wireCard(q.qno);}
+    }
+  });
+}
+
+/* ---- Q&A board ---- */
+let qnaTimer=null, qnaReplyTo=0;
+function openQna(){$('#qnaDrawer').classList.add('on');loadQna();if(qnaTimer)clearInterval(qnaTimer);qnaTimer=setInterval(loadQna,7000);}
+function closeQna(){$('#qnaDrawer').classList.remove('on');if(qnaTimer){clearInterval(qnaTimer);qnaTimer=null;}}
+function fmtTime(t){const d=new Date(t*1000);const p=n=>('0'+n).slice(-2);return p(d.getHours())+':'+p(d.getMinutes());}
+async function loadQna(){
+  const d=await jget('/api/qna');
+  if(d.error){$('#qnaList').innerHTML=`<p style="color:var(--ink3);font-size:13px">${esc(d.error)}</p>`;return;}
+  const posts=d.posts||[], tops=posts.filter(p=>!p.parent), reps=posts.filter(p=>p.parent);
+  const one=(p,isr)=>`<div class="qpost ${isr?'reply':''}"><div class="ph">
+      <span class="who">${esc(p.author)}</span>
+      <span class="rl ${p.role==='instructor'?'instr':''}">${p.role==='instructor'?'강사':'학생'}</span>
+      ${p.qno?`<span class="rl">Q${p.qno}</span>`:''}<span class="tm">${fmtTime(p.ts)}</span></div>
+      <div class="bd">${esc(p.body)}</div>${(!isr&&d.is_instr)?`<span class="rbtn" onclick="qnaReply(${p.id})">답변 달기</span>`:''}</div>`;
+  $('#qnaList').innerHTML=tops.length
+    ? tops.map(p=>one(p,false)+reps.filter(r=>r.parent===p.id).map(r=>one(r,true)).join('')).join('')
+    : '<p style="color:var(--ink3);font-size:13px">아직 등록된 문의가 없습니다. 첫 질문을 남겨 보세요.</p>';
+}
+window.qnaReply=(id)=>{qnaReplyTo=id;const t=$('#qnaText');t.placeholder='↳ 위 질문에 대한 답변을 작성합니다.';t.focus();};
+async function sendQna(){const t=$('#qnaText');const v=(t.value||'').trim();if(!v)return;
+  const r=await jpost('/api/qna',{body:v,parent:qnaReplyTo});if(r&&r.error){alert(r.error);return;}
+  t.value='';qnaReplyTo=0;t.placeholder='궁금한 점을 남겨 주세요.';loadQna();}
 function renderStages(stages){
   if(!stages){$('#stagesStrip').innerHTML='';return;}
   $('#stagesStrip').innerHTML=stages.map(s=>{
@@ -349,7 +473,7 @@ function updateSummary(d){
   $('#reqPct').textContent=pct+'%'; $('#reqBar').style.width=pct+'%';
 }
 async function refreshCard(qno){
-  const d=await jget('/api/questions'); QS=d.questions; renderStages(d.stages); updateSummary(d);
+  const d=await jget('/api/questions'); QS=d.questions; renderStages(d.stages); updateSummary(d); renderNav();
   const q=QS.find(x=>x.qno===qno); if(!q)return;
   const old=document.querySelector(`.q[data-qno="${qno}"]`);
   if(old){const t=document.createElement('div');t.innerHTML=qCard(q);old.replaceWith(t.firstElementChild);wireCard(qno);}

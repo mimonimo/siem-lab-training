@@ -45,7 +45,7 @@ bash "$LAB"/scripts/40_wazuh_config.sh
 step "5. dashboard index patterns + wide default time range + tidy views"
 bash "$LAB"/scripts/47_dashboard_setup.sh
 bash "$LAB"/scripts/48_alerts_pattern.sh
-python3 "$LAB"/scripts/config_dashboard.py    # hide noise fields + per-log-type saved searches
+python3 "$LAB"/scripts/config_dashboard.py    # 3 index patterns (archives/alerts/combined) + per-log saved searches
 
 step "6. generate dataset + mission bank (grading spec for portal)"
 python3 "$LAB"/scripts/siem_lab_gen.py
@@ -57,6 +57,11 @@ bash "$LAB"/scripts/70_portal_deploy.sh
 
 step "8. authoritative clean ingest + verify (removes build noise)"
 bash "$LAB"/scripts/90_finalize_dataset.sh
+
+step "9. finalize dashboard views against ingested data (field cache refresh)"
+# Must run AFTER the final ingest so index-pattern field caches are populated
+# (empty caches => Discover shows no fields). Also dedups/cleans index patterns.
+python3 "$LAB"/scripts/config_dashboard.py
 
 echo
 echo "=================================================================="

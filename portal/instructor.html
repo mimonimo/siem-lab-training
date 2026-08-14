@@ -64,6 +64,22 @@
   .hidden{display:none} input.award{width:58px;padding:5px 8px;border:1.5px solid var(--bd2);border-radius:7px;font-family:var(--mono)}
   select{padding:6px 9px;border:1.5px solid var(--bd2);border-radius:8px;font-size:13px;background:#fff}
   .hint-note{background:var(--pri-wash);border:1px solid var(--pri-bd);color:var(--ink2);font-size:12.5px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--rose);display:inline-block;margin-left:4px;vertical-align:middle;box-shadow:0 0 0 3px rgba(225,29,72,.16)}
+  .dot.hidden{display:none}
+  .qna-list{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+  .qpost{border:1px solid var(--bd);border-radius:11px;padding:10px 12px;background:var(--panel2)}
+  .qpost.reply{margin-left:22px;background:var(--emer-wash);border-color:var(--emer-bd)}
+  .qpost .ph{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;margin-bottom:4px}
+  .qpost .ph .who{color:var(--ink)}
+  .qpost .ph .rl{font-size:9.5px;font-weight:750;padding:1px 7px;border-radius:20px;background:var(--pri-wash);color:var(--pri)}
+  .qpost .ph .rl.instr{background:var(--emer-wash);color:var(--emer)}
+  .qpost .ph .tm{color:var(--ink3);font-weight:500;font-size:11px;margin-left:auto}
+  .qpost .ph .del{color:var(--ink3);font-size:11px;cursor:pointer;font-weight:600}
+  .qpost .ph .del:hover{color:var(--rose)}
+  .qpost .bd{font-size:13px;color:var(--ink);line-height:1.6;white-space:pre-wrap;word-break:break-word}
+  .qna-compose{display:flex;flex-direction:column;gap:8px}
+  .qna-compose textarea{width:100%;padding:10px 12px;border:1.5px solid var(--bd2);border-radius:10px;font-size:13px;font-family:inherit;background:var(--panel2);outline:none;resize:vertical;min-height:60px}
+  .qna-compose textarea:focus{border-color:var(--pri);background:#fff;box-shadow:var(--ring)}
 </style>
 </head>
 <body>
@@ -85,11 +101,15 @@
     <div class="tabs">
       <button id="tabSol" class="on">📘 문제 풀이 해설</button>
       <button id="tabSub">📊 제출 현황 · 채점</button>
-      <button id="tabUnl">🔓 해금 관리</button>
+      <button id="tabUnl">👥 사용자 · 해금</button>
+      <button id="tabQna">💬 문의 게시판 <span id="qnaDot" class="dot hidden"></span></button>
+      <button id="tabSys">⚙️ 시스템 정보</button>
     </div>
     <div id="solView"></div>
     <div id="subView" class="hidden"></div>
     <div id="unlockView" class="hidden"></div>
+    <div id="qnaView" class="hidden"></div>
+    <div id="sysView" class="hidden"></div>
   </div>
 
 <script>
@@ -118,12 +138,31 @@ async function boot(){   // session-based auth (portal login as admin/p@ssw0rd)
   if(ok){ SOL=d; KEY=''; showApp(); }
 }
 boot();
-$('#tabSol').onclick=()=>switchTab('sol'); $('#tabSub').onclick=()=>switchTab('sub'); $('#tabUnl').onclick=()=>switchTab('unl');
+let curTab='sol';
+['Sol','Sub','Unl','Qna','Sys'].forEach(x=>$('#tab'+x).onclick=()=>switchTab(x.toLowerCase()));
 function switchTab(t){
-  $('#tabSol').classList.toggle('on',t==='sol'); $('#tabSub').classList.toggle('on',t==='sub'); $('#tabUnl').classList.toggle('on',t==='unl');
-  $('#solView').classList.toggle('hidden',t!=='sol'); $('#subView').classList.toggle('hidden',t!=='sub'); $('#unlockView').classList.toggle('hidden',t!=='unl');
-  if(t==='sub') renderSubs(); if(t==='unl') renderUnlock();
+  curTab=t;
+  const tm={sol:'#tabSol',sub:'#tabSub',unl:'#tabUnl',qna:'#tabQna',sys:'#tabSys'};
+  const vm={sol:'#solView',sub:'#subView',unl:'#unlockView',qna:'#qnaView',sys:'#sysView'};
+  Object.entries(tm).forEach(([k,s])=>$(s).classList.toggle('on',k===t));
+  Object.entries(vm).forEach(([k,s])=>$(s).classList.toggle('hidden',k!==t));
+  if(t==='sub')renderSubs(); if(t==='unl')renderUnlock(); if(t==='qna')renderQna(); if(t==='sys')renderSys();
 }
+/* clipboard that also works over plain HTTP */
+function copyText(t){ if(navigator.clipboard&&window.isSecureContext){return navigator.clipboard.writeText(t).catch(()=>fbCopy(t));} return fbCopy(t); }
+function fbCopy(t){const a=document.createElement('textarea');a.value=t;a.setAttribute('readonly','');a.style.position='fixed';a.style.top='-1000px';document.body.appendChild(a);a.focus();a.select();let ok=false;try{ok=document.execCommand('copy');}catch(e){}document.body.removeChild(a);return Promise.resolve(ok);}
+window.cpBtn=async(b,t)=>{await copyText(t);const o=b.textContent;b.textContent='복사됨 ✓';setTimeout(()=>b.textContent=o,1200);};
+
+/* near-real-time: refresh the active tab automatically (skip while editing an input) */
+setInterval(async()=>{
+  if(document.hidden||$('#app').classList.contains('hidden'))return;
+  const ae=document.activeElement, editing=ae&&['INPUT','TEXTAREA','SELECT'].includes(ae.tagName);
+  try{const {d}=await jget('/api/qna?key='+encodeURIComponent(KEY));
+    if(d&&d.posts){const open=d.posts.filter(p=>!p.parent).some(p=>!d.posts.some(r=>r.parent===p.id));
+      $('#qnaDot').classList.toggle('hidden',!open);}}catch(e){}
+  if(editing)return;
+  if(curTab==='sub')renderSubs(); else if(curTab==='unl')renderUnlock(); else if(curTab==='qna')renderQna();
+},7000);
 function renderSolutions(){
   const sc=SOL.scoring;
   let head=`<div class="card hint-note"><b>배점 규칙</b> · 기본점 난이도별(하10·중15·상20) · 오답 −${sc.wrong}점/회 · 힌트 누적 −1·−2·−3점(최대 ${sc.max_hints}개) · 필수 ${SOL.max_required}점 + 보너스 ${SOL.max_bonus}점</div>`;
@@ -166,12 +205,70 @@ async function renderUnlock(){
     <span style="color:var(--ink3);font-size:12px">${d.stage_names.map((n,i)=>`${n}(${d.stage_totals[i]}문항)`).join(' · ')}</span></div>`;
   const rows=d.users.map(u=>`<tr><td><b>${esc(u.team)}</b></td><td>현재 <b style="color:var(--pri)">${u.unlocked}단계</b></td>
     <td>${u.stage_done.map((c,i)=>`${i+1}:${c}/${d.stage_totals[i]}`).join(' · ')}</td><td>${u.score}점</td>
-    <td><select id="ov_${esc(u.team)}">${opts(u.override)}</select> <button class="btn sm" onclick="setUnlock('${esc(u.team)}')">적용</button></td></tr>`).join('');
+    <td><select id="ov_${esc(u.team)}">${opts(u.override)}</select> <button class="btn sm" onclick="setUnlock('${esc(u.team)}')">적용</button></td>
+    <td><button class="btn sm" style="color:var(--rose)" onclick="resetUser('${esc(u.team)}')">초기화</button></td></tr>`).join('');
   $('#unlockView').innerHTML=head+`<div class="card" style="padding:0;overflow-x:auto"><table>
-    <tr><th>학생</th><th>해금 상태</th><th>단계별 완료</th><th>점수</th><th>강제 해금(오버라이드)</th></tr>${rows}</table></div>
-    <div style="margin-top:10px"><button class="btn sm" onclick="renderUnlock()">새로고침</button></div>`;
+    <tr><th>학생</th><th>해금 상태</th><th>단계별 완료</th><th>점수</th><th>강제 해금(오버라이드)</th><th>진행 초기화</th></tr>${rows}</table></div>
+    <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+      <button class="btn sm" onclick="renderUnlock()">새로고침</button>
+      <span style="flex:1"></span>
+      <button class="btn sm" style="color:var(--rose);border-color:var(--amber-bd)" onclick="resetAll()">⚠ 전체 초기화(재사용 시)</button></div>`;
 }
+window.resetUser=async(team)=>{ if(!confirm(team+' 학생의 제출·점수·힌트·해금을 모두 초기화할까요? (되돌릴 수 없습니다)'))return;
+  await jpost('/api/instructor/reset',{key:KEY,team}); renderUnlock(); };
+window.resetAll=async()=>{ if(!confirm('모든 학생의 진행 상황을 초기화합니다. 다음 기수/재실습을 위해서만 사용하세요. 계속할까요?'))return;
+  if(!confirm('정말 전체 초기화할까요? 모든 제출·점수가 삭제됩니다.'))return;
+  const {d}=await jpost('/api/instructor/reset',{key:KEY,team:'*'}); alert('초기화 완료'+(d&&d.cleared!=null?` (${d.cleared}명)`:'')); renderUnlock(); };
 window.setUnlock=async(team)=>{const v=+document.getElementById('ov_'+team).value;await jpost('/api/instructor/unlock',{key:KEY,team,stage:v});renderUnlock();};
+
+/* ---- 문의 게시판 (강사: 답변/공지/삭제) ---- */
+let iReplyTo=0;
+function fmtT(t){const x=new Date(t*1000);const p=n=>('0'+n).slice(-2);return p(x.getMonth()+1)+'/'+p(x.getDate())+' '+p(x.getHours())+':'+p(x.getMinutes());}
+async function renderQna(){
+  const {d}=await jget('/api/qna?key='+encodeURIComponent(KEY));
+  const posts=(d&&d.posts)||[], tops=posts.filter(p=>!p.parent), reps=posts.filter(p=>p.parent);
+  const one=(p,isr)=>`<div class="qpost ${isr?'reply':''}"><div class="ph">
+      <span class="who">${esc(p.author)}</span><span class="rl ${p.role==='instructor'?'instr':''}">${p.role==='instructor'?'강사':'학생'}</span>
+      ${p.qno?`<span class="rl">Q${p.qno}</span>`:''}<span class="tm">${fmtT(p.ts)}</span>
+      <span class="del" onclick="qnaDel(${p.id})">삭제</span></div>
+      <div class="bd">${esc(p.body)}</div>
+      ${!isr?`<button class="btn sm" style="margin-top:7px" onclick="iReply(${p.id})">답변 달기</button>`:''}</div>`;
+  const body=tops.length
+    ? tops.map(p=>one(p,false)+reps.filter(r=>r.parent===p.id).map(r=>one(r,true)).join('')).join('')
+    : '<p style="color:var(--ink3);font-size:13px">아직 등록된 문의가 없습니다.</p>';
+  $('#qnaView').innerHTML=`<div class="card"><div class="qna-list">${body}</div>
+    <div class="qna-compose"><textarea id="iQnaText" placeholder="답변 또는 전체 공지를 작성하세요."></textarea>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn pri sm" onclick="iSend()">등록</button>
+        <button class="btn sm" onclick="iClearReply()">답변대상 해제</button>
+        <span id="iReplyLbl" style="font-size:12px;color:var(--pri);font-weight:700"></span></div></div></div>`;
+  if(iReplyTo){const l=$('#iReplyLbl'); if(l) l.textContent='↳ Q#'+iReplyTo+' 에 답변';}
+}
+window.iReply=(id)=>{iReplyTo=id;const t=$('#iQnaText');if(t)t.focus();const l=$('#iReplyLbl');if(l)l.textContent='↳ Q#'+id+' 에 답변';};
+window.iClearReply=()=>{iReplyTo=0;const l=$('#iReplyLbl');if(l)l.textContent='';};
+window.iSend=async()=>{const t=$('#iQnaText');const v=(t.value||'').trim();if(!v)return;await jpost('/api/qna',{key:KEY,body:v,parent:iReplyTo});t.value='';iReplyTo=0;renderQna();};
+window.qnaDel=async(id)=>{if(!confirm('이 글을 삭제할까요?'))return;await jpost('/api/qna/delete',{key:KEY,id});renderQna();};
+
+/* ---- 시스템 정보 (자격증명 · 학생 계정) ---- */
+async function renderSys(){
+  let c={}; try{c=await(await fetch('/api/config')).json();}catch(e){}
+  const host=location.hostname, n=c.user_count||20;
+  const box=(title,url,user,pw)=>`<div class="card"><div class="qtext">${title}</div><div class="kv">
+    <b>주소</b> <code>${esc(url)}</code> <button class="btn sm" onclick="cpBtn(this,'${esc(url)}')">복사</button><br>
+    <b>아이디</b> <code>${esc(user)}</code>${pw?` &nbsp;&nbsp;<b>비밀번호</b> <code>${esc(pw)}</code> <button class="btn sm" onclick="cpBtn(this,'${esc(pw)}')">복사</button>`:''}</div></div>`;
+  const accts=Array.from({length:n},(_,i)=>'user_'+(i+1));
+  $('#sysView').innerHTML=`
+    <div class="card hint-note">⚙️ 실습 운영에 필요한 접속 정보입니다. 학생 안내와 본인 로그인에 사용하세요. (복사 버튼은 HTTP에서도 동작)</div>
+    ${box('🛡 Wazuh 대시보드', 'https://'+host+'/', c.wazuh_user||'admin', c.wazuh_pass||'(설치 로그의 Password 참조)')}
+    ${box('🧑‍🏫 강사 로그인 (포털)', 'http://'+host+':8081/', 'admin', 'p@ssw0rd')}
+    <div class="card"><div class="qtext">🎓 학생 포털 계정 · 총 ${n}개 (비밀번호 = 아이디)</div>
+      <div class="kv"><b>주소</b> <code>http://${esc(host)}:8081/</code> <button class="btn sm" onclick="cpBtn(this,'http://${esc(host)}:8081/')">복사</button></div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:11px">${accts.map(a=>`<button class="btn sm ghost" onclick="cpBtn(this,'${a}')" title="아이디 복사(비번 동일)">${a}</button>`).join('')}</div>
+      <div style="font-size:12px;color:var(--ink3);margin-top:9px">계정 버튼을 누르면 아이디가 복사됩니다. 비밀번호는 아이디와 동일합니다 (예: user_1 / user_1).</div></div>
+    <div class="card"><div class="qtext">🔗 페이지 링크</div><div class="kv">
+      학생 포털 <code>http://${esc(host)}:8081/</code><br>교안 <code>http://${esc(host)}:8081/guide</code><br>
+      Wazuh 대시보드 <code>https://${esc(host)}/</code><br>라이브 데모 <code>http://${esc(host)}:8080/</code></div></div>`;
+}
 </script>
 </body>
 </html>
