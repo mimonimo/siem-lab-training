@@ -6,22 +6,21 @@
 <title>브릿지웍스 사내 통합포털</title>
 <style>
   :root{
-    --bw-navy:#122a4a; --bw-blue:#1f5fbf; --bw-accent:#0e9f6e;
-    --bw-bg:#eef2f7; --bw-card:#ffffff; --bw-line:#d7dee8; --bw-text:#1c2733;
-    --bw-mut:#5b6b7c; --bw-warn:#c0392b;
-    --con-bg:#0f1720; --con-line:#1f2b38; --con-txt:#cfe3ff; --con-mut:#7f93a8;
+    --bw-navy:#16283f; --bw-blue:#1c6fd0; --bw-accent:#0f9d74;
+    --bw-bg:#f1f4f8; --bw-card:#ffffff; --bw-line:#dbe1ea; --bw-text:#1a2733;
+    --bw-mut:#5c6875; --bw-warn:#c0392b;
+    --con-bg:#111a24; --con-line:#22303f; --con-txt:#d6e4f2; --con-mut:#8497a9;
   }
   *{box-sizing:border-box}
-  body{margin:0;font-family:"Malgun Gothic","맑은 고딕",-apple-system,"Segoe UI",
-    "Apple SD Gothic Neo",sans-serif;background:var(--bw-bg);color:var(--bw-text);
-    padding-bottom:300px;transition:padding-bottom .12s}
+  body{margin:0;font-family:"Inter","Pretendard",-apple-system,"Segoe UI",Roboto,
+    "Malgun Gothic","맑은 고딕","Apple SD Gothic Neo",sans-serif;background:var(--bw-bg);color:var(--bw-text);
+    padding-bottom:300px;transition:padding-bottom .12s;-webkit-font-smoothing:antialiased}
   a{color:inherit;text-decoration:none}
-  .topbar{background:var(--bw-navy);color:#fff;padding:0 24px;height:58px;
+  .topbar{background:var(--bw-navy);color:#fff;padding:0 24px;height:56px;
     display:flex;align-items:center;justify-content:space-between}
-  .brand{display:flex;align-items:center;gap:11px;font-weight:700;font-size:18px}
-  .brand .mark{width:30px;height:30px;border-radius:7px;
-    background:linear-gradient(135deg,var(--bw-blue),var(--bw-accent));
-    display:flex;align-items:center;justify-content:center;font-size:15px}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:700;font-size:17px}
+  .brand .mark{width:28px;height:28px;border-radius:6px;background:var(--bw-blue);
+    display:flex;align-items:center;justify-content:center;font-size:14px}
   .brand small{font-weight:400;opacity:.7;font-size:12px;margin-left:4px}
   .gnb{display:flex;gap:20px;font-size:14px}.gnb a{opacity:.85}.gnb a:hover{opacity:1}
   .userbox{font-size:13px;opacity:.9;display:flex;gap:10px;align-items:center}
