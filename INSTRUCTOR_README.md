@@ -85,5 +85,7 @@ sudo python3 /opt/siem-lab/scripts/config_dashboard.py   # 인덱스패턴 3개+
   | `rules` | Wazuh 커스텀 룰 | local_rules.xml 재적용+재적재 |
   | `all` | 로그+문제+대시보드 한 번에 | data+dash |
   - **portal.db(학생 진행·Q&A)는 모든 모드에서 보존**됩니다. 새 기수 시작 시에는 강사 콘솔 → 사용자·해금 → "전체 초기화".
-- **네트워크(외부 접속)**: VMware를 **Bridged**로 두면 VM이 LAN IP를 받습니다(`hostname -I`로 확인). 포털은 접속 주소(`location.hostname`)에 자동으로 맞추므로 IP 하드코딩이 없습니다. 방화벽에서 **8081·443·8080·22** 개방 필요(`sudo ufw status`; 활성 시 `sudo ufw allow 8081,443,8080,22/tcp`). Wazuh(:443)는 자체 서명 인증서라 브라우저 경고 → "고급 → 계속"으로 진행.
+- **네트워크(외부 접속)** — 포털은 접속 주소(`location.hostname`)+기본포트를 그대로 따르므로 **IP 하드코딩이 없어** 아래 두 방식 모두 설정 변경 없이 동작합니다. 단, VM 방화벽은 열어두세요(`sudo ufw status`; 활성 시 `sudo ufw allow 8081,443,8080,22/tcp`). Wazuh(:443)는 자체 서명 인증서라 브라우저 경고 → "고급 → 계속".
+  1. **Bridged (권장, 유선/정상 Wi-Fi)**: VM이 직접 LAN IP를 받음(`hostname -I`). 학생은 `http://<VM-IP>:8081/`.
+  2. **NAT + 포트포워딩 (Bridged가 막히는 Wi-Fi 등)**: 호스트(Windows)에서 관리자 PowerShell로 `scripts/win_nat_portforward.ps1` 실행 → 호스트 LAN IP로 공개. 학생은 `http://<호스트 LAN IP>:8081/`. **포트는 1:1(8081/443/8080)로 매핑**해야 Wazuh 버튼(포트 없는 https)이 동작. VM IP가 바뀌면 스크립트의 `$VMIP` 수정 후 재실행. (같은 Wi-Fi의 'AP 격리'가 켜져 있으면 학생↔호스트 통신이 막힐 수 있음 → 유선/공유기 확인)
 - 정답키·채점스펙은 비공개로 관리. 학생에겐 포털 접속만 제공.
