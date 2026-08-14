@@ -265,6 +265,23 @@ Aug 13 04:38:05 siem sshd[22004]: <span class="hl2">Failed password</span> for i
       <div class="note">🔎 검색은 <b>필드:값</b> 형식입니다. 문자열은 <code>full_log:"..."</code>, IP·계정은 <code>data.srcip:"..."</code>·<code>data.dstuser:"..."</code>, 여러 조건은 <code>and</code>/<code>or</code>로 연결합니다.<br>
       ⚠️ <b>대문자·특수문자(:)</b>가 든 값은 따옴표 검색이 안 걸릴 수 있습니다. 이럴 땐 <b>와일드카드</b>를 쓰세요 — 예: <code>full_log:*NOPASSWD*</code>.</div>
 
+      <h3>🗂️ 인덱스 패턴 — 어떤 로그를 볼지 고르는 '창'</h3>
+      <p class="sub">인덱스 패턴은 Wazuh 인덱서(OpenSearch)에 쌓인 로그 묶음을 Discover에서 조회하도록 연결한 것입니다. 이 실습엔 3개가 준비돼 있습니다.</p>
+      <div class="tablewrap"><table>
+        <tr><th style="width:280px">인덱스 패턴</th><th>무엇을 보나</th></tr>
+        <tr><td><code>wazuh-archives-*</code></td><td>모든 원문 로그(정상+이상) — 기본 분석 대상</td></tr>
+        <tr><td><code>wazuh-alerts-*</code></td><td>룰에 걸린 탐지 알림만</td></tr>
+        <tr><td><code>wazuh-alerts-*,wazuh-archives-*</code></td><td>둘을 한 번에 (난이도↑)</td></tr>
+      </table></div>
+      <p style="font-weight:750;margin:14px 0 4px">직접 만들려면 (목록에 없거나 새로 만들 때)</p>
+      <ol class="steps">
+        <li>좌측 메뉴 <b>☰ → Dashboards Management</b>(또는 Stack Management) → <b>Index Patterns</b>.</li>
+        <li><b>Create index pattern</b> 클릭 → 이름에 <code>wazuh-archives-*</code> 입력 (끝의 <code>*</code>로 날짜별 인덱스를 한 번에 묶음).</li>
+        <li>매칭되는 인덱스가 표시되면 <b>Next step</b> → <b>Time field</b>로 <code>timestamp</code> 선택 → <b>Create index pattern</b>.</li>
+        <li>이제 Discover 좌측 상단 드롭다운에서 그 패턴을 선택해 검색할 수 있습니다.</li>
+      </ol>
+      <div class="note">🗂️ 실습 환경엔 위 3개가 <b>이미 생성돼 있어</b> Discover에서 <b>선택만</b> 하면 됩니다. 목록에 안 보일 때만 위 절차로 만드세요. (별표 <code>*</code>는 <code>wazuh-archives-4.x-2026.08.13</code> 같은 날짜별 인덱스를 한꺼번에 조회하기 위한 것)</div>
+
       <h3>🔤 DQL 검색 문법 (Discover 검색창)</h3>
       <p class="sub">Wazuh 대시보드는 <b>DQL</b>(Dashboards Query Language)로 검색합니다. 아래 문법만 알면 대부분의 분석이 됩니다.</p>
       <div class="tablewrap"><table>
