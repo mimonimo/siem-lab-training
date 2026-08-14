@@ -123,6 +123,16 @@
   .banner.att{background:#2a1416;border-color:#5a2a2a;color:#ffb3a7}
   .banner.ok{background:#122a1e;border-color:#255140;color:#a8e8c8}
   .banner b{color:#fff}
+  .sessbar{display:none;align-items:center;flex-wrap:wrap;gap:7px;margin-bottom:8px;padding:8px 11px;border-radius:8px;background:#0f1b2b;border:1px solid var(--con-line)}
+  .sessbar.on{display:flex}
+  .sessbar .sc{font-size:12px;color:var(--con-mut);font-weight:600} .sessbar .sc b{color:#7fd1ff;font-size:14px}
+  .sessbar .rchip{font-size:11px;font-weight:700;color:#ffcf9e;background:#3a2410;border:1px solid #5a3a1a;border-radius:20px;padding:2px 9px}
+  .sessbar .rchip b{color:#fff}
+  .sessbar .wz{margin-left:auto;font-size:11.5px;font-weight:700;color:#fff;background:#1a6dc2;border:0;border-radius:7px;padding:5px 11px;cursor:pointer}
+  .sessbar .wz:hover{background:#2f86dd}
+  @keyframes secpulse{0%{background:#fdecea}60%{background:#fdecea}100%{background:#fff}}
+  .belldd .it.sec{color:#b3261e;font-weight:700;animation:secpulse 1.4s ease}
+  .belldd .it.sec span{color:#c0605a}
   .attanat{display:none;font-size:11.5px;margin-bottom:8px;border:1px solid var(--con-line);border-radius:8px;overflow:hidden}
   .attanat.on{display:grid;grid-template-columns:repeat(5,minmax(0,1fr))}
   .attanat .c{padding:7px 10px;border-right:1px solid var(--con-line);min-width:0}
@@ -403,6 +413,7 @@
         </div>
       </div>
       <div class="con-right">
+        <div class="sessbar" id="sessBar"></div>
         <div class="banner" id="banner">버튼을 누르거나 위 검색창·게시판에 입력하면, 실제 <b>access.log</b>가 생성되고 잠시 뒤 <b>Wazuh</b>에서 탐지됩니다. (이 페이지는 어떤 시스템 명령도 실행하지 않습니다 — 로그만 기록)</div>
         <div class="attanat" id="anat"></div>
         <div class="logview" id="logview"><span class="ln">// 실시간 access.log 미리보기…</span></div>
@@ -444,6 +455,35 @@
       an.innerHTML=[['대상 페이지',j.anat.page],['메서드',j.anat.method],['주입 위치',j.anat.vector],['페이로드',j.anat.payload],['출발지',j.anat.src]]
         .map(function(kv){return '<div class="c"><span class="k">'+kv[0]+'</span><span class="v">'+esc(kv[1])+'</span></div>';}).join('');
     } else { an.className='attanat'; an.innerHTML=''; }
+    trackAttack(j, att&&!normal);
+  }
+  var atkCount=0, firedRules={};
+  function trackAttack(j, isAtk){
+    if(!isAtk)return;
+    atkCount++;
+    var m=(j.rule||'').match(/\d{3,}/); var rid=m?m[0]:(j.rule||'기타');
+    firedRules[rid]=(firedRules[rid]||0)+1;
+    renderSess(); secAlert(j);
+  }
+  function renderSess(){
+    var el=document.getElementById('sessBar'); if(!el)return;
+    var chips=Object.keys(firedRules).map(function(r){
+      var label=/^\d+$/.test(r)?('rule.id '+r):r;
+      return '<span class="rchip">'+label+' <b>×'+firedRules[r]+'</b></span>';}).join('');
+    el.className='sessbar on';
+    el.innerHTML='<span class="sc">이번 세션 탐지 <b>'+atkCount+'</b>건</span>'+chips
+      +'<button class="wz" onclick="window.open(\'https://\'+location.hostname,\'_blank\')">Wazuh에서 확인 ↗</button>';
+  }
+  function secAlert(j){
+    var dd=document.getElementById('bellDd'); if(!dd)return;
+    var m=(j.rule||'').match(/\d{3,}/); var rid=m?('rule.id '+m[0]):'의심 요청';
+    var src=(j.anat&&j.anat.src)||'203.0.113.66';
+    var it=document.createElement('div'); it.className='it sec';
+    it.innerHTML='⚠ 보안 경고 · '+esc(rid)+' 탐지<span>출발지 '+esc(src)+'</span>';
+    var h=dd.querySelector('.h');
+    if(h&&h.nextSibling)dd.insertBefore(it,h.nextSibling); else dd.appendChild(it);
+    if(h)h.textContent='알림 '+dd.querySelectorAll('.it').length+'건';
+    var b=document.getElementById('bellBadge'); if(b){b.classList.remove('hidden'); b.textContent=(parseInt(b.textContent||'0',10)||0)+1;}
   }
   function busy(on){buttons.forEach(function(b){b.disabled=on;});}
 
