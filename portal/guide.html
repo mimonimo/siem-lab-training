@@ -76,42 +76,77 @@
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .kbd{font-family:var(--mono);background:#fff;border:1px solid var(--bd);border-radius:5px;padding:1px 6px;font-size:12px}
   @media(max-width:640px){.grid2{grid-template-columns:1fr}.sec{padding:18px}}
-  /* ---- 페이지형 열람(화면): 사이드바 + 한 번에 한 섹션 ---- */
+  /* ---- 페이지형 열람(화면): 중앙 정렬 + 상단 툴바 + 목차 오버레이 ---- */
   @media screen{
-    .lead{display:none}                                  /* 표지·목차는 사이드바로 대체(인쇄 시 복원) */
-    .sidenav{position:fixed;top:52px;left:0;width:238px;height:calc(100vh - 52px);overflow-y:auto;
-      background:var(--panel);border-right:1px solid var(--bd);padding:14px 12px 40px;z-index:15}
-    .sidenav .sgrp{font-size:10px;font-weight:750;letter-spacing:.04em;color:var(--ink3);text-transform:uppercase;margin:15px 8px 5px}
-    .sidenav .sgrp:first-child{margin-top:2px}
-    .sidenav a{display:block;font-size:12.8px;font-weight:600;color:var(--ink2);padding:6px 10px;border-radius:7px;cursor:pointer;line-height:1.35;text-decoration:none}
-    .sidenav a:hover{background:var(--panel2);color:var(--pri)}
-    .sidenav a.on{background:var(--pri-wash);color:var(--pri-d);font-weight:750}
-    .sidenav a{position:relative}
-    .sidenav a .rk{position:absolute;right:9px;top:50%;transform:translateY(-50%);color:var(--emer);font-size:12px;font-weight:800;opacity:0;transition:opacity .15s}
-    .sidenav a.read .rk{opacity:1}
-    .sidenav .prog{margin:2px 8px 12px;padding:0 0 13px;border-bottom:1px solid var(--bd)}
+    .lead{display:none}                                  /* 표지·목차는 오버레이로 대체(인쇄 시 복원) */
+    /* 상단 툴바 */
+    .gbar{position:sticky;top:52px;z-index:16;background:var(--panel);border-bottom:1px solid var(--bd)}
+    .gbar-in{max-width:920px;margin:0 auto;padding:9px 24px;display:flex;align-items:center;gap:9px}
+    .gbar .gbtn{border:1px solid var(--bd2);background:var(--panel);color:var(--ink2);border-radius:7px;padding:7px 12px;font-size:12.5px;font-weight:650;cursor:pointer;white-space:nowrap;transition:.12s}
+    .gbar .gbtn:hover:not(:disabled){border-color:var(--pri);color:var(--pri)}
+    .gbar .gbtn:disabled{opacity:.38;cursor:default}
+    .gbar .gbtn.menu{font-weight:700}
+    .gbar .gpos{font-size:12.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .gbar .gpos b{color:var(--pri-d)} .gbar .gpos small{color:var(--ink3);font-weight:600}
+    .gbar .gsp{flex:1}
+    .gbar .gsw{position:relative;flex:none}
+    .gbar .gsw input{width:180px;max-width:38vw;box-sizing:border-box;border:1px solid var(--bd2);border-radius:7px;padding:7px 11px;font-size:12.5px;font-family:inherit;background:var(--panel2);outline:none;transition:.14s}
+    .gbar .gsw input:focus{border-color:var(--pri);background:#fff;box-shadow:0 0 0 3px var(--pri-wash);width:230px}
+    .gprogline{height:3px;background:var(--panel3)}
+    .gprogline i{display:block;height:100%;width:0;background:var(--emer);transition:width .3s}
+    /* 검색 결과 드롭다운 */
+    .gres{display:none;position:absolute;top:calc(100% + 7px);right:0;width:360px;max-width:82vw;max-height:62vh;overflow-y:auto;
+      background:var(--panel);border:1px solid var(--bd);border-radius:11px;box-shadow:0 16px 44px -14px rgba(20,30,50,.36);padding:8px;z-index:40}
+    .gres.on{display:block}
+    .gres .rh{font-size:10.5px;color:var(--ink3);font-weight:750;margin:2px 6px 7px}
+    .gres .sr{padding:8px 10px;border-radius:8px;cursor:pointer;border:1px solid var(--bd);background:var(--panel)}
+    .gres .sr+.sr{margin-top:5px}
+    .gres .sr:hover{background:var(--panel2);border-color:var(--pri-bd)}
+    .gres .sr b{font-size:11.5px;color:var(--pri-d);display:block;margin-bottom:2px}
+    .gres .sr small{font-size:11px;color:var(--ink2);line-height:1.45;display:block;word-break:break-word}
+    .gres .gempty{font-size:11.5px;color:var(--ink3);padding:6px}
+    mark{background:#fde68a;color:inherit}
+    .gres mark,.wrap mark.gshl{background:#fde68a;color:inherit;border-radius:2px;padding:0 1px}
+    /* 목차 오버레이 메뉴 */
+    .menu-backdrop{position:fixed;inset:0;background:rgba(20,28,42,.28);z-index:25;opacity:0;pointer-events:none;transition:opacity .16s}
+    .menu-backdrop.open{opacity:1;pointer-events:auto}
+    .sidenav{position:fixed;top:100px;left:50%;transform:translateX(-50%) translateY(-8px);width:min(700px,92vw);max-height:72vh;overflow-y:auto;
+      background:var(--panel);border:1px solid var(--bd);border-radius:13px;box-shadow:0 20px 54px -16px rgba(20,30,50,.42);padding:15px 16px 17px;z-index:30;
+      opacity:0;pointer-events:none;transition:opacity .16s, transform .16s}
+    .sidenav.open{opacity:1;pointer-events:auto;transform:translateX(-50%) translateY(0)}
+    .sidenav .prog{margin:0 2px 12px;padding:0 0 13px;border-bottom:1px solid var(--bd)}
     .sidenav .prog .lb{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:750;color:var(--ink2);margin-bottom:6px}
     .sidenav .prog .lb .rr{font-size:10px;font-weight:650;color:var(--ink3);cursor:pointer}
     .sidenav .prog .lb .rr:hover{color:var(--pri)}
     .sidenav .prog .bar{height:6px;background:var(--panel3);border-radius:6px;overflow:hidden}
     .sidenav .prog .bar i{display:block;height:100%;width:0;background:var(--emer);transition:width .3s}
-    .wrap{margin-left:238px;max-width:900px;padding:22px 30px 40px}
+    .sidenav .mgrid{display:grid;grid-template-columns:1fr 1fr;gap:5px 16px}
+    .sidenav .sgrp{grid-column:1/-1;font-size:10px;font-weight:750;letter-spacing:.04em;color:var(--ink3);text-transform:uppercase;margin:9px 6px 1px}
+    .sidenav .sgrp:first-of-type{margin-top:0}
+    .sidenav a{position:relative;display:block;font-size:12.8px;font-weight:600;color:var(--ink2);padding:7px 10px;border-radius:7px;cursor:pointer;line-height:1.35;text-decoration:none}
+    .sidenav a:hover{background:var(--panel2);color:var(--pri)}
+    .sidenav a.on{background:var(--pri-wash);color:var(--pri-d);font-weight:750}
+    .sidenav a .rk{position:absolute;right:9px;top:50%;transform:translateY(-50%);color:var(--emer);font-size:12px;font-weight:800;opacity:0}
+    .sidenav a.read .rk{opacity:1}
+    /* 본문: 중앙 정렬 */
+    .wrap{max-width:920px;margin:0 auto;padding:24px 24px 48px}
     .sec{display:none}
     .sec.active{display:block;animation:pgfade .22s ease}
     @keyframes pgfade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
-    .pagenav{display:flex;align-items:center;gap:12px;margin:30px 0 6px;padding-top:16px;border-top:1px solid var(--bd)}
+    .pagenav{display:flex;align-items:center;gap:12px;margin:32px 0 6px;padding-top:16px;border-top:1px solid var(--bd)}
     .pagenav button{border:1px solid var(--bd2);background:var(--panel);color:var(--ink);border-radius:8px;padding:9px 16px;font-size:13px;font-weight:650;cursor:pointer;transition:.12s}
     .pagenav button:hover:not(:disabled){border-color:var(--pri);color:var(--pri)}
     .pagenav button:disabled{opacity:.4;cursor:default}
     .pagenav .pgmid{flex:1;text-align:center;font-size:12px;color:var(--ink3);font-weight:600}
     .pagenav .nx{margin-left:auto}
   }
-  @media screen and (max-width:860px){
-    .sidenav{position:static;width:auto;height:auto;border-right:0;border-bottom:1px solid var(--bd);
-      display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:8px 12px}
-    .sidenav .sgrp,.sidenav .prog,.sidenav a .rk{display:none}
-    .sidenav a{white-space:nowrap;flex:none}
-    .wrap{margin-left:0;padding:18px 16px 36px}
+  @media screen and (max-width:640px){
+    .gbar-in{padding:8px 14px;gap:7px}
+    .gbar .gpos{font-size:11.5px}
+    .gbar .gsw input{width:110px} .gbar .gsw input:focus{width:150px}
+    .gres{width:280px}
+    .sidenav .mgrid{grid-template-columns:1fr}
+    .wrap{padding:18px 15px 40px}
   }
   /* ---- 인쇄/PDF 저장: 웹 화면이 아니라 '문서'처럼 보이게 ---- */
   @media print{
@@ -119,7 +154,7 @@
     @page{margin:16mm 15mm}
     html,body{background:#fff!important;font-size:10.5pt;line-height:1.5;color:#1a1c21}
     .hdr{display:none!important}                      /* 웹 헤더 완전 제거 */
-    .sidenav,.pagenav{display:none!important}          /* 페이지 네비 제거 → 전체 문서로 인쇄 */
+    .sidenav,.pagenav,.gbar,.menu-backdrop,.gres{display:none!important}   /* 네비 제거 → 전체 문서로 인쇄 */
     .wrap{max-width:none;margin:0;padding:0}
     .toc{display:none}
     /* 표지/제목 블록 */
@@ -161,6 +196,15 @@
     <div class="hdr-r"><a class="hbtn" href="/">← 미션 포털</a><button class="hbtn" onclick="window.print()">PDF 저장</button><button class="hbtn pri" onclick="window.open('https://'+location.hostname,'_blank')">Wazuh 열기 ↗</button></div>
   </div></header>
 
+  <div class="gbar"><div class="gbar-in">
+    <button class="gbtn menu" onclick="guideMenu()">☰ 목차</button>
+    <button class="gbtn pv" id="gPrev" onclick="guidePrev()">← 이전</button>
+    <button class="gbtn nx" id="gNext" onclick="guideNext()">다음 →</button>
+    <div class="gpos" id="gpos"></div>
+    <div class="gsp"></div>
+    <div class="gsw"><input id="gq" type="search" placeholder="교안 검색…" autocomplete="off"><div class="gres" id="gres"></div></div>
+  </div><div class="gprogline"><i id="rbar"></i></div></div>
+  <div class="menu-backdrop" id="menuBackdrop" onclick="guideMenu(false)"></div>
   <nav class="sidenav" id="sidenav"></nav>
   <div class="wrap">
     <div class="lead">
@@ -768,31 +812,42 @@ Aug 13 04:38:05 siem sshd[22004]: <span class="hl2">Failed password</span> for i
     {t:'4부 · 참고 자료', ids:['s8','s9','s10','s11']}
   ];
   var order=[]; PARTS.forEach(function(p){p.ids.forEach(function(id){order.push(id);});});
-  function secTitle(id){var s=document.getElementById(id); if(!s)return id;
+  function secName(id){var s=document.getElementById(id); if(!s)return id;
     var h=s.querySelector('h2'); if(!h)return id;
     var n=h.querySelector('.n'), num=n?n.textContent.trim():'';
     var rest=h.textContent.replace(/\s+/g,' ').trim();
     if(num&&rest.indexOf(num)===0)rest=rest.slice(num.length).trim();
-    return (num?num+'. ':'')+rest;}
+    return rest;}
+  function secTitle(id){var s=document.getElementById(id); if(!s)return id;
+    var h=s.querySelector('h2'); var n=h&&h.querySelector('.n'); var num=n?n.textContent.trim():'';
+    return (num?num+'. ':'')+secName(id);}
   var cur=0;
   var RKEY='guide_read_v1', READ={};
   try{READ=JSON.parse(localStorage.getItem(RKEY)||'{}')||{};}catch(e){READ={};}
   function saveRead(){try{localStorage.setItem(RKEY,JSON.stringify(READ));}catch(e){}}
   window.guideResetRead=function(){READ={};saveRead();render();};
+
+  /* ---- 목차 오버레이 메뉴 ---- */
   function buildNav(){
     var nav=document.getElementById('sidenav');
     var html='<div class="prog"><div class="lb"><span>학습 진행</span>'
       +'<span><span id="rcount">0/'+order.length+'</span> · <span class="rr" onclick="guideResetRead()" title="읽음 표시 초기화">초기화</span></span></div>'
-      +'<div class="bar"><i id="rbar"></i></div></div>';
+      +'<div class="bar"><i id="rbarMenu"></i></div></div><div class="mgrid">';
     PARTS.forEach(function(p){
       html+='<div class="sgrp">'+p.t+'</div>';
-      p.ids.forEach(function(id){
-        var idx=order.indexOf(id);
-        html+='<a data-idx="'+idx+'" data-id="'+id+'" onclick="guideGo('+idx+')">'+secTitle(id)+'<span class="rk">✓</span></a>';
-      });
+      p.ids.forEach(function(id){var idx=order.indexOf(id);
+        html+='<a data-idx="'+idx+'" data-id="'+id+'" onclick="guideGo('+idx+');guideMenu(false)">'+secTitle(id)+'<span class="rk">✓</span></a>';});
     });
-    nav.innerHTML=html;
+    nav.innerHTML=html+'</div>';
   }
+  window.guideMenu=function(open){
+    var m=document.getElementById('sidenav'), b=document.getElementById('menuBackdrop');
+    if(open===undefined)open=!m.classList.contains('open');
+    m.classList.toggle('open',open); b.classList.toggle('open',open);
+  };
+  window.guidePrev=function(){guideGo(cur-1);};
+  window.guideNext=function(){guideGo(cur+1);};
+
   function render(){
     order.forEach(function(id,i){var s=document.getElementById(id); if(s)s.classList.toggle('active',i===cur);});
     var links=document.querySelectorAll('#sidenav a'), rc=0;
@@ -800,30 +855,82 @@ Aug 13 04:38:05 siem sshd[22004]: <span class="hl2">Failed password</span> for i
       a.classList.toggle('on',+a.getAttribute('data-idx')===cur);
       var rd=!!READ[a.getAttribute('data-id')]; a.classList.toggle('read',rd); if(rd)rc++;
     });
+    var pct=Math.round(rc/order.length*100);
     var rcEl=document.getElementById('rcount'); if(rcEl)rcEl.textContent=rc+'/'+order.length;
-    var rbar=document.getElementById('rbar'); if(rbar)rbar.style.width=Math.round(rc/order.length*100)+'%';
+    ['rbar','rbarMenu'].forEach(function(id){var b=document.getElementById(id); if(b)b.style.width=pct+'%';});
+    var pos=document.getElementById('gpos'); if(pos)pos.innerHTML='<b>'+(cur+1)+'</b> <small>/ '+order.length+'</small> · '+secName(order[cur]);
+    var pv=document.getElementById('gPrev'), nx=document.getElementById('gNext');
+    if(pv)pv.disabled=(cur===0); if(nx)nx.disabled=(cur===order.length-1);
     var pn=document.getElementById('pagenav');
-    pn.innerHTML='<button class="pv" '+(cur===0?'disabled':'')+' onclick="guideGo('+(cur-1)+')">← 이전</button>'
-      +'<span class="pgmid">'+(cur+1)+' / '+order.length+' · '+secTitle(order[cur])+'</span>'
-      +'<button class="nx" '+(cur===order.length-1?'disabled':'')+' onclick="guideGo('+(cur+1)+')">다음 →</button>';
-    var active=document.querySelector('.sidenav a.on');
-    if(active&&active.scrollIntoView)active.scrollIntoView({block:'nearest'});
+    if(pn)pn.innerHTML='<button class="pv" '+(cur===0?'disabled':'')+' onclick="guidePrev()">← 이전</button>'
+      +'<span class="pgmid">'+(cur+1)+' / '+order.length+' · '+secName(order[cur])+'</span>'
+      +'<button class="nx" '+(cur===order.length-1?'disabled':'')+' onclick="guideNext()">다음 →</button>';
   }
   window.guideGo=function(i){
     if(i<0||i>=order.length)return;
-    cur=i; READ[order[cur]]=1; saveRead(); render();
+    clearHL(); cur=i; READ[order[cur]]=1; saveRead(); render();
     try{history.replaceState(null,'','#'+order[cur]);}catch(e){location.hash=order[cur];}
     window.scrollTo({top:0,behavior:'smooth'});
   };
   window.guideHome=function(){guideGo(0);};
-  // deep-link: TOC/미션포털에서 #s6 등으로 진입하면 해당 페이지 열기
   function fromHash(){var h=(location.hash||'').replace('#','');var i=order.indexOf(h);return i>=0?i:0;}
+
+  /* ---- 전체 검색 ---- */
+  var IDX=[], LASTQ='';
+  function buildIndex(){ IDX=order.map(function(id,i){var s=document.getElementById(id);
+    var text=s?(s.textContent||'').replace(/\s+/g,' ').trim():'';
+    return {id:id, idx:i, title:secTitle(id), text:text, low:text.toLowerCase()};}); }
+  function escHtml(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function doSearch(q){
+    var res=document.getElementById('gres'); q=(q||'').trim(); LASTQ=q;
+    if(q.length<2){res.className='gres';res.innerHTML='';return;}
+    var ql=q.toLowerCase(), out=[], n=0;
+    for(var i=0;i<IDX.length;i++){
+      var it=IDX[i], pos=it.low.indexOf(ql); if(pos<0)continue; n++;
+      var s=Math.max(0,pos-32), e=Math.min(it.text.length,pos+q.length+62);
+      var snip=(s>0?'…':'')+escHtml(it.text.slice(s,pos))+'<mark>'+escHtml(it.text.slice(pos,pos+q.length))+'</mark>'
+        +escHtml(it.text.slice(pos+q.length,e))+(e<it.text.length?'…':'');
+      out.push('<div class="sr" onclick="gSearchGo('+it.idx+')"><b>'+escHtml(it.title)+'</b><small>'+snip+'</small></div>');
+      if(n>=14)break;
+    }
+    res.className='gres on';
+    res.innerHTML=out.length?('<div class="rh">'+n+'개 섹션에서 발견</div>'+out.join('')):'<div class="gempty">일치하는 내용이 없습니다.</div>';
+  }
+  window.gSearchGo=function(idx){var res=document.getElementById('gres'); if(res)res.className='gres';
+    guideGo(idx); setTimeout(function(){hlSection(LASTQ);},90);};
+  function clearHL(){ var ms=document.querySelectorAll('mark.gshl');
+    ms.forEach(function(m){var p=m.parentNode; if(!p)return; p.replaceChild(document.createTextNode(m.textContent),m); p.normalize();}); }
+  function hlSection(q){ clearHL(); if(!q||q.length<2)return;
+    var sec=document.getElementById(order[cur]); if(!sec)return; var ql=q.toLowerCase();
+    var walker=document.createTreeWalker(sec, NodeFilter.SHOW_TEXT, { acceptNode:function(node){
+      if(!node.nodeValue||node.nodeValue.toLowerCase().indexOf(ql)<0)return NodeFilter.FILTER_REJECT;
+      var p=node.parentElement; if(!p||p.closest('svg,script,style,mark'))return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT; }});
+    var nodes=[],x; while(x=walker.nextNode())nodes.push(x); var first=null;
+    nodes.forEach(function(node){ var val=node.nodeValue, low=val.toLowerCase(), frag=document.createDocumentFragment(), last=0, pos;
+      while((pos=low.indexOf(ql,last))>=0){ if(pos>last)frag.appendChild(document.createTextNode(val.slice(last,pos)));
+        var m=document.createElement('mark'); m.className='gshl'; m.textContent=val.slice(pos,pos+q.length); frag.appendChild(m); if(!first)first=m; last=pos+q.length; }
+      if(last<val.length)frag.appendChild(document.createTextNode(val.slice(last)));
+      node.parentNode.replaceChild(frag,node); });
+    if(first)first.scrollIntoView({behavior:'smooth',block:'center'});
+  }
+
   document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'){guideMenu(false); var r=document.getElementById('gres'); if(r)r.className='gres'; return;}
     if(e.target&&/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
     if(e.key==='ArrowLeft')guideGo(cur-1); else if(e.key==='ArrowRight')guideGo(cur+1);
   });
+  document.addEventListener('click',function(e){
+    var sw=document.getElementById('gq'); var res=document.getElementById('gres');
+    if(res&&!e.target.closest('.gsw'))res.className='gres';
+  });
   window.addEventListener('hashchange',function(){var i=fromHash(); if(i!==cur)guideGo(i);});
-  buildNav(); cur=fromHash(); READ[order[cur]]=1; saveRead(); render();
+
+  buildNav(); buildIndex();
+  var gq=document.getElementById('gq');
+  if(gq){ gq.addEventListener('input',function(){doSearch(this.value);});
+    gq.addEventListener('keydown',function(e){ if(e.key==='Enter'){var first=document.querySelector('#gres .sr'); if(first)first.click();}}); }
+  cur=fromHash(); READ[order[cur]]=1; saveRead(); render();
 })();
 </script>
 </body>
