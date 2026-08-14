@@ -36,6 +36,8 @@
   .toc{display:flex;flex-wrap:wrap;gap:7px}
   .toc a{font-size:12.5px;font-weight:650;background:#fff;border:1px solid var(--bd);border-radius:20px;padding:4px 12px;color:var(--ink2)}
   .toc a:hover{border-color:var(--pri);color:var(--pri)}
+  .toc .tocp{flex-basis:100%;font-size:11px;font-weight:750;letter-spacing:.02em;color:var(--ink3);text-transform:uppercase;margin:9px 0 -1px}
+  .toc .tocp:first-child{margin-top:0}
   /* section */
   .sec{background:var(--panel);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--sh);padding:20px 22px;margin-bottom:14px;scroll-margin-top:66px}
   .sec h2{margin:0 0 6px;font-size:18px;letter-spacing:-.2px;display:flex;align-items:center;gap:10px;font-weight:700}
@@ -122,10 +124,14 @@
       <b>시간·IP·계정</b>으로 연결하고, 실제 침해와 미끼(정찰·정상업무·방어성공)를 구분하는 CTF형 실습입니다.
       배경지식이 없어도 따라올 수 있도록 구성도·시나리오·로그 읽는 법·분석 방법·실전 쿼리까지 담았습니다.</p>
       <div class="toc">
-        <a href="#s1">① 구성도</a><a href="#s2">② 시나리오</a><a href="#s3">③ 로그 소스</a>
-        <a href="#s4">④ 로그 라인 해부</a><a href="#s5">⑤ 분석 방법론</a><a href="#s6">⑥ Wazuh 실전</a>
-        <a href="#s7">⑦ 실전 예제</a><a href="#s8">⑧ MITRE ATT&CK</a><a href="#s9">⑨ 탐지 룰</a>
-        <a href="#s10">⑩ 주의점·오탐</a><a href="#s11">⑪ 용어집</a>
+        <span class="tocp">1부 · 배경 이해</span>
+        <a href="#s1">① 구성도</a><a href="#s2">② 시나리오</a>
+        <span class="tocp">2부 · 로그 읽기</span>
+        <a href="#s3">③ 로그 소스</a><a href="#s4">④ 로그 라인 해부</a>
+        <span class="tocp">3부 · 분석 실전</span>
+        <a href="#s5">⑤ 분석 방법론</a><a href="#s6">⑥ Wazuh 실전</a><a href="#s7">⑦ 실전 예제</a>
+        <span class="tocp">4부 · 참고 자료</span>
+        <a href="#s8">⑧ MITRE ATT&CK</a><a href="#s9">⑨ 탐지 룰</a><a href="#s10">⑩ 주의점·오탐</a><a href="#s11">⑪ 용어집</a>
       </div>
     </div>
 
@@ -367,6 +373,23 @@ Aug 13 04:38:05 siem sshd[22004]: <span class="hl2">Failed password</span> for i
         <li><b>미끼 걸러내기</b> — 성공 응답·후속 행위가 없으면 정찰(C)·정상업무(D)·방어성공(F)일 수 있습니다. 대응 우선순위를 판단하세요.</li>
       </ol>
       <div class="tip"><b>핵심</b> — <b>①은 '지표를 찾는' 단계가 앞에 하나 더 붙고</b>, ②는 그 단계를 건너뛰고 <b>바로 피벗부터</b> 시작합니다. 지표를 확보한 뒤(피벗 이후)부터는 두 경우 모두 동일합니다. 그리고 SOC 판단 기준은 '알림 개수'가 아니라 '조사 후 대응이 필요한가'입니다.</div>
+
+      <h3>한 장 요약 — 무엇을 · 어디서 · 어떻게 보나</h3>
+      <p class="sub">각 공격 단계가 <b>어느 로그에 남고</b>, <b>어떤 검색으로 꺼내며</b>, <b>화면에서 무엇이 보이는지</b>를 한 표로 모았습니다. 조사 중 막히면 이 표에서 소스와 검색어를 되짚으세요.</p>
+      <div class="tablewrap"><table>
+        <tr><th style="width:132px">공격 단계</th><th style="width:120px">로그 소스</th><th>검색 예시 (DQL)</th><th>화면에서 보이는 것</th></tr>
+        <tr><td>브루트포스·최초 침투 (A1)</td><td>auth.log</td><td><code>full_log:*Failed*password*</code> → 이후 <code>data.srcip:"198.51.100.23"</code></td><td>같은 IP의 다수 Failed → 마지막 Accepted. 그 IP가 첫 <b>지표</b>.</td></tr>
+        <tr><td>웹셸 배치 (A2)</td><td>auth.log · audit.log</td><td><code>full_log:"search.php"</code> / <code>full_log:"webroot_write"</code></td><td>sudo cp로 웹 루트에 파일 생성, 감사 key로 교차 확인.</td></tr>
+        <tr><td>원격 명령 실행 (A3)</td><td>access.log · audit.log</td><td><code>rule.id:100101</code> / <code>full_log:"webshell_exec"</code></td><td>URL <code>cmd=</code> 요청과 실제 프로세스 실행(comm=)이 짝을 이룸.</td></tr>
+        <tr><td>페이로드 다운로드 (A4)</td><td>access.log · audit.log</td><td><code>full_log:*wget* and full_log:*kworker*</code></td><td>숨은 경로로 내려받는 다운로드 명령·프로세스.</td></tr>
+        <tr><td>cron 지속성 (A5)</td><td>cron.log · audit.log</td><td><code>rule.id:100112</code> / <code>full_log:"cron_persist"</code></td><td>매분/@reboot 실행 등록 — 재부팅에도 살아남는 구조.</td></tr>
+        <tr><td>바이너리 위장 (A6)</td><td>audit.log</td><td><code>rule.id:100113</code> / <code>full_log:"198.51.100.47"</code></td><td>시스템 명령 위장 파일, 원문에 C2 주소 문자열.</td></tr>
+        <tr><td>권한 상승 (B)</td><td>auth.log · audit.log</td><td><code>rule.id:100111</code> / <code>full_log:*NOPASSWD*</code></td><td>무인증 sudo 백도어 설정. 특수문자 키워드는 와일드카드로.</td></tr>
+        <tr><td>정보 유출 (E)</td><td>access.log · audit.log</td><td><code>full_log:*curl* and full_log:*loot*</code></td><td>압축본을 외부(.47)로 업로드 — 체인의 종착점.</td></tr>
+        <tr><td>지표 없이 헌팅할 때</td><td>alerts 전체</td><td><code>rule.level&gt;=10</code> → 필드 <code>data.srcip</code> 상위값</td><td>고위험 탐지에서 출발해 공격자 IP를 역으로 추출.</td></tr>
+        <tr><td>미끼 판별 (C·D·F)</td><td>access/auth/ufw</td><td><code>rule.id:100102</code> · <code>data.srcip:"192.168.208.50"</code> · <code>"198.51.100.99"</code></td><td>스캐너 404·정상 배포·잠긴 실패 — <b>성공/후속행위 없음</b>이 판별점.</td></tr>
+      </table></div>
+      <div class="note">검색어는 <b>예시</b>일 뿐, 정답을 그대로 주는 것이 아닙니다. 핵심은 "이 단계는 어느 소스에 남고, 어떤 키워드로 좁히는가"라는 <b>사고 흐름</b>을 익히는 것 — 실제 값은 화면에서 직접 확인하세요.</div>
     </div>
 
     <!-- 6. Wazuh 실전 -->
@@ -624,16 +647,62 @@ Aug 13 04:38:05 siem sshd[22004]: <span class="hl2">Failed password</span> for i
     <!-- 11. 용어집 -->
     <div class="sec" id="s11">
       <h2><span class="n">11</span>용어집</h2>
+      <p class="sub">실습에서 마주치는 용어를 세 갈래(공격·침해 / 로그·소스 / Wazuh·분석)로 정리했습니다. 처음 보는 단어가 나오면 여기서 찾아보세요.</p>
+
+      <h3>공격 · 침해 개념</h3>
       <div class="tablewrap"><table>
-        <tr><th style="width:150px">용어</th><th>뜻</th></tr>
-        <tr><td>웹셸(web shell)</td><td>웹서버에 올려두고 URL로 명령을 실행시키는 악성 스크립트. 여기선 비동작 더미.</td></tr>
-        <tr><td>브루트포스</td><td>비밀번호를 반복 대입해 뚫는 공격. auth.log의 다수 Failed로 나타남.</td></tr>
-        <tr><td>지속성(persistence)</td><td>재부팅·재접속에도 살아남게 하는 수법. cron·sudoers 등록 등.</td></tr>
-        <tr><td>권한 상승</td><td>일반 권한에서 root 등 높은 권한을 획득. sudoers.d 백도어 등.</td></tr>
-        <tr><td>정보 유출(exfiltration)</td><td>내부 데이터를 외부로 빼내는 것. 압축 후 외부 업로드.</td></tr>
-        <tr><td>미끼(decoy)</td><td>공격처럼 보이지만 대응이 불필요한 사건(정찰·정상업무·방어성공).</td></tr>
-        <tr><td>SIEM</td><td>여러 로그를 모아 상관분석·탐지하는 보안 관제 시스템(여기선 Wazuh).</td></tr>
-        <tr><td>피벗(pivot)</td><td>하나의 단서(IP·계정)를 기준으로 관련 이벤트를 확장 조회하는 분석 기법.</td></tr>
+        <tr><th style="width:170px">용어</th><th>뜻</th></tr>
+        <tr><td>웹셸(web shell)</td><td>웹서버에 올려두고 URL로 명령을 실행시키는 악성 스크립트. 이 실습에선 <code>/search.php?cmd=…</code> 형태의 <b>비동작 더미</b>.</td></tr>
+        <tr><td>브루트포스(무차별 대입)</td><td>비밀번호를 반복 대입해 뚫는 공격. auth.log에 다수 <code>Failed password</code> → 마지막에 <code>Accepted</code>로 나타남.</td></tr>
+        <tr><td>페이로드(payload)</td><td>침투 후 실행할 실제 악성코드. 여기선 <code>wget</code>으로 내려받아 숨은 경로에 저장한 <code>kworker</code>.</td></tr>
+        <tr><td>지속성(persistence)</td><td>재부팅·재접속에도 공격이 살아남게 하는 수법. cron 등록, sudoers 백도어, 자동실행 등.</td></tr>
+        <tr><td>권한 상승(privilege escalation)</td><td>일반 사용자가 root 등 높은 권한을 획득. 이 실습에선 <code>NOPASSWD</code> sudoers 백도어.</td></tr>
+        <tr><td>C2 · 커넥트백(connect-back)</td><td>감염 호스트가 공격자 서버로 먼저 접속해 명령을 받는 통신(Command&amp;Control). 변조 바이너리의 <code>198.51.100.47:4444</code> 문자열.</td></tr>
+        <tr><td>setuid</td><td>실행 시 파일 소유자(root) 권한으로 동작하게 하는 비트. 위장 바이너리에 심어 상시 권한 확보에 악용.</td></tr>
+        <tr><td>위장(masquerading)</td><td>악성 파일을 정상 이름으로 숨기는 것. 커널 스레드명 <code>kworker</code>, 시스템 명령 <code>/usr/bin/backup</code>으로 위장.</td></tr>
+        <tr><td>정보 유출(exfiltration)</td><td>내부 데이터를 외부로 빼내는 것. <code>tar</code>로 압축 후 <code>curl</code>로 외부 업로드.</td></tr>
+        <tr><td>2차 hop · 유출 서버</td><td>공격에 함께 쓰이는 보조 인프라. <code>198.51.100.47</code>은 페이로드 배포 겸 유출 목적지(공격자 본체 <code>.23</code>과 같은 /24).</td></tr>
+        <tr><td>킬체인(kill chain)</td><td>정찰→침투→실행→지속성→권한상승→유출로 이어지는 공격 단계의 흐름. §2 타임라인 참고.</td></tr>
+        <tr><td>IOC(침해 지표)</td><td>침해를 가리키는 구체적 단서 — 악성 IP·해시·파일 경로·계정 등. 조사의 '피벗' 기준이 됨.</td></tr>
+        <tr><td>TTP</td><td>공격자의 전술(Tactic)·기법(Technique)·절차(Procedure). MITRE ATT&amp;CK가 이를 표준화.</td></tr>
+        <tr><td>MITRE ATT&amp;CK</td><td>실제 공격 기법을 전술·기법 코드(T1110 등)로 분류한 표준 지식체계. §8 매핑 참고.</td></tr>
+        <tr><td>오탐(false positive) · 미끼</td><td>공격처럼 보이지만 실제 대응이 불필요한 사건(정찰·정상업무·방어성공). C·D·F 스토리라인.</td></tr>
+      </table></div>
+
+      <h3>로그 · 소스</h3>
+      <div class="tablewrap"><table>
+        <tr><th style="width:170px">용어</th><th>뜻</th></tr>
+        <tr><td>access.log (Apache)</td><td>웹 요청 기록. 요청 URL·파라미터(<code>cmd=</code>)·응답코드·User-Agent가 남음. 웹셸·스캐너 흔적의 원천.</td></tr>
+        <tr><td>auth.log (sshd/sudo)</td><td>로그인·인증·sudo 기록. 브루트포스(Failed/Accepted)와 권한상승(sudo) 흔적.</td></tr>
+        <tr><td>audit.log (auditd)</td><td>커널 감사 로그. 실제 <b>프로세스 실행</b>과 파일 변경을 기록 — 웹 로그가 '요청'이라면 이건 '실행됐다'는 증거.</td></tr>
+        <tr><td>cron.log</td><td>예약 작업(cron) 실행·등록 기록. 지속성(apache-backup) 판별.</td></tr>
+        <tr><td>ufw.log</td><td>방화벽(UFW) 차단 로그. 포트 스캔 등 정찰 흔적.</td></tr>
+        <tr><td>auditd key=</td><td>감사 규칙이 이벤트에 붙이는 의미 태그. <code>webshell_exec·webroot_write·cron_persist·priv_esc·bin_tamper</code>.</td></tr>
+        <tr><td>comm=</td><td>auditd가 기록한 실행된 프로세스 이름(<code>id·wget·tar·tee</code> 등). 명령이 실제 실행됐는지 교차확인용.</td></tr>
+        <tr><td>syscall</td><td>프로세스가 커널에 요청한 시스템 호출. auditd 로그의 <code>type=SYSCALL</code> 항목.</td></tr>
+        <tr><td>User-Agent</td><td>요청을 보낸 클라이언트 식별 문자열. <code>sqlmap</code> 등 스캐너는 특유의 UA를 남김.</td></tr>
+        <tr><td>pam_faillock</td><td>로그인 반복 실패 시 계정을 잠그는 방어 모듈. F 스토리라인(6회 실패 잠금).</td></tr>
+        <tr><td>FIM(파일 무결성 감시)</td><td>중요 파일·디렉터리의 생성·변경을 감시·기록하는 기능. 웹셸 배치·sudoers 변경 탐지에 활용.</td></tr>
+      </table></div>
+
+      <h3>Wazuh · 분석</h3>
+      <div class="tablewrap"><table>
+        <tr><th style="width:170px">용어</th><th>뜻</th></tr>
+        <tr><td>SIEM</td><td>여러 로그를 모아 상관분석·탐지하는 보안 관제 시스템. 이 실습에선 Wazuh.</td></tr>
+        <tr><td>Wazuh 구성</td><td>manager(분석·룰)·indexer(저장·검색, OpenSearch)·dashboard(화면)·filebeat(전송)로 이뤄짐.</td></tr>
+        <tr><td>Discover</td><td>Wazuh 대시보드에서 원본 로그를 검색·열람하는 화면. 대부분의 조사가 여기서 시작.</td></tr>
+        <tr><td>DQL</td><td>Discover 검색창의 질의 문법(Dashboards Query Language). <code>필드:값</code>, <code>and/or</code>, 와일드카드 <code>*</code>.</td></tr>
+        <tr><td>인덱스 패턴</td><td>어떤 로그 묶음을 볼지 고르는 '창'. <code>wazuh-alerts-*</code>(탐지) / <code>wazuh-archives-*</code>(전체 원본).</td></tr>
+        <tr><td>alerts vs archives</td><td><code>wazuh-alerts-*</code>=룰에 걸린 <b>탐지</b>만, <code>wazuh-archives-*</code>=매칭 여부 무관 <b>모든 원본 이벤트</b>. 탐지에서 출발해 원본으로 파고들 때 둘을 오감.</td></tr>
+        <tr><td>rule.id</td><td>탐지 룰 번호. 커스텀 룰 <code>100101</code>(웹셸)·<code>100111</code>(sudoers)·<code>100112</code>(cron) 등.</td></tr>
+        <tr><td>rule.level</td><td>탐지 심각도(0~15). 높을수록 위험. <code>rule.level&gt;=10</code>으로 고위험만 추릴 수 있음.</td></tr>
+        <tr><td>rule.groups</td><td>룰 분류 태그. 이 실습 커스텀 탐지는 <code>siem_lab</code>으로 묶여 있음(§9 캡처).</td></tr>
+        <tr><td>디코더(decoder) · 정규화</td><td>제각각인 로그 원문에서 의미 필드를 뽑아 표준 이름으로 통일하는 과정. 원문 IP → <code>data.srcip</code>.</td></tr>
+        <tr><td>정규화 필드</td><td>디코더가 만든 검색용 필드. <code>data.srcip</code>(출발지)·<code>data.srcuser</code>·<code>full_log</code>(원문 전체)·<code>location</code>(소스 파일).</td></tr>
+        <tr><td>피벗(pivot)</td><td>하나의 단서(IP·계정)를 기준으로 관련 이벤트를 확장 조회하는 분석 기법. 조사의 중심축.</td></tr>
+        <tr><td>상관분석(correlation)</td><td>서로 다른 소스의 이벤트를 IP·시간·계정으로 이어 하나의 사건으로 묶는 것.</td></tr>
+        <tr><td>타임라인 재구성</td><td>흩어진 이벤트를 실제 시각순으로 배열해 공격 흐름을 복원하는 것. 종합 문항의 핵심.</td></tr>
+        <tr><td>트리아지(triage)</td><td>다수 알림 중 실제 대응이 필요한 것을 선별·우선순위화하는 판단. '알림 ≠ 침해'.</td></tr>
       </table></div>
     </div>
 
