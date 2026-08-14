@@ -418,7 +418,7 @@ function qCard(q){
 async function loadQuestions(){
   const d=await jget('/api/questions'); QS=d.questions;
   const req=QS.filter(q=>q.section==='필수'), bon=QS.filter(q=>q.section==='보너스');
-  $('#reqWrap').innerHTML=`<div class="secttl"><span class="pill">필수</span>핵심 문항<span class="ln"></span><span class="cnt">${req.length}문항 · 먼저 풀어보세요</span></div>`+req.map(qCard).join('');
+  $('#reqWrap').innerHTML=`<div class="secttl"><span class="pill">필수</span>핵심 문항<span class="ln"></span><span class="cnt">${req.length}문항 · 필수 배점</span></div>`+req.map(qCard).join('');
   $('#bonWrap').innerHTML=`<div class="secttl"><span class="pill b">보너스</span>심화 문항<span class="ln"></span><span class="cnt">${bon.length}문항</span></div>`+bon.map(qCard).join('');
   QS.forEach(q=>wireCard(q.qno)); $('#stTotal').textContent=CFG.total; renderStages(d.stages); updateSummary(d); renderNav();
   startPoll();

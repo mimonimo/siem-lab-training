@@ -11,7 +11,7 @@
 # receives a hint only when it pays for it, and the explanation only on solve.
 # No system commands are executed.
 # ============================================================================
-import os, re, json, sqlite3, time, threading
+import os, re, json, sqlite3, time, threading, subprocess
 from flask import Flask, request, jsonify, session, send_from_directory, g
 
 APP_DIR   = os.path.dirname(os.path.abspath(__file__))
@@ -419,6 +419,77 @@ def api_instr_reset():
         db().execute("DELETE FROM umeta WHERE team=?", (team,))
         db().commit()
     return jsonify(ok=True, team=team)
+
+# ---- dataset rebuild (로그+정답키를 현재 시각 기준으로 클린 재적재) ---------- #
+# finalize 스크립트는 실행 도중 siem-portal 을 재시작한다. 그래서 재생성 작업을
+# 포털 프로세스의 자식(=같은 systemd cgroup)으로 띄우면 재시작 때 함께 죽는다.
+# systemd-run 으로 포털 cgroup 밖의 트랜지언트 유닛에서 돌려 재시작을 견디게 한다.
+LAB_DIR    = os.environ.get("LAB_DIR", "/opt/siem-lab")
+FINALIZE_SH= os.path.join(LAB_DIR, "scripts", "90_finalize_dataset.sh")
+REB_LOG    = os.path.join(LAB_DIR, "logs", "rebuild.log")
+REB_STATUS = os.path.join(LAB_DIR, "logs", "rebuild.status")
+
+def _reb_status_tag():
+    try:
+        return open(REB_STATUS, encoding="utf-8").read().strip().split(None, 1)
+    except Exception:
+        return []
+
+@app.route("/api/instructor/rebuild", methods=["POST"])
+def api_instr_rebuild():
+    if not _auth_instr(): return jsonify(error="unauthorized"), 403
+    tag = _reb_status_tag()
+    if tag and tag[0] == "running":
+        return jsonify(ok=True, already=True)
+    if not os.path.exists(FINALIZE_SH):
+        return jsonify(error="재생성 스크립트를 찾을 수 없습니다 (%s)" % FINALIZE_SH), 500
+    try: open(REB_LOG, "w").close()          # start a fresh log
+    except Exception: pass
+    # status 파일을 마커로 사용: 포털이 중간에 재시작돼도 상태는 파일에서 복원된다.
+    wrapper = (
+        'echo "running 시작" > "{st}"; '
+        'if bash "{fin}" >> "{log}" 2>&1; then '
+        'echo "done $(date +%Y-%m-%d\\ %H:%M)" > "{st}"; '
+        'else echo "fail $(date +%Y-%m-%d\\ %H:%M)" > "{st}"; fi'
+    ).format(st=REB_STATUS, fin=FINALIZE_SH, log=REB_LOG)
+    try:
+        # 포털 cgroup 밖의 트랜지언트 유닛에서 실행 → siem-portal 재시작에도 생존
+        subprocess.Popen(
+            ["systemd-run", "--collect", "--quiet", "--unit=siem-rebuild",
+             "bash", "-c", wrapper],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except FileNotFoundError:
+        # systemd-run 이 없으면 detached 세션으로 폴백
+        subprocess.Popen(["bash", "-c", wrapper], start_new_session=True,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        with open(REB_STATUS, "w", encoding="utf-8") as f: f.write("running 시작")
+    except Exception: pass
+    return jsonify(ok=True, started=True)
+
+@app.route("/api/instructor/rebuild/status")
+def api_instr_rebuild_status():
+    if not _auth_instr(): return jsonify(error="unauthorized"), 403
+    running, last_result, finished_at, phase, tail = False, None, None, None, None
+    tag = _reb_status_tag()
+    if tag:
+        if tag[0] == "running":
+            running = True
+        elif tag[0] in ("done", "fail"):
+            last_result = tag[0]
+            finished_at = tag[1] if len(tag) > 1 else ""
+    try:
+        lines = [l.rstrip() for l in open(REB_LOG, encoding="utf-8", errors="replace")
+                 .read().splitlines() if l.strip()]
+        if lines:
+            tail = lines[-1][:200]
+            phs = [l for l in lines if l.startswith("### [")]
+            if phs: phase = phs[-1].replace("### ", "")
+    except FileNotFoundError:
+        pass
+    return jsonify(running=running, last_result=last_result,
+                   finished_at=finished_at or "", phase=phase or "준비 중",
+                   tail=tail or "")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORTAL_PORT", "8081")))

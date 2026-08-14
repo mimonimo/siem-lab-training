@@ -92,16 +92,6 @@
   .qstat{float:right;font-size:10.5px;font-weight:750;padding:2px 9px;border-radius:20px}
   .qstat.wait{background:var(--amber-wash);color:var(--amber);border:1px solid var(--amber-bd)}
   .qstat.done{background:var(--emer-wash);color:var(--emer);border:1px solid var(--emer-bd)}
-  /* 풀어보기 미리보기 */
-  .try .trow{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
-  .try .tans{flex:1;min-width:180px;padding:9px 11px;border:1.5px solid var(--bd2);border-radius:8px;font-size:13px;font-family:var(--mono);outline:none}
-  .try .tans:focus{border-color:var(--pri);box-shadow:var(--ring)}
-  .tprimer{background:var(--pri-wash);border:1px solid var(--pri-bd);border-radius:8px;padding:7px 10px;font-size:12.5px;color:#243b7a;margin:7px 0}
-  .tfmt{font-size:11.5px;color:var(--ink3);margin-top:6px}
-  .tres{margin-top:9px;font-size:13px;font-weight:700}
-  .tres .tok{color:var(--emer)}.tres .tno{color:var(--rose)}.tres .tman{color:var(--amber)}
-  .texp{margin-top:9px;background:var(--emer-wash);border:1px solid var(--emer-bd);border-left:3px solid var(--emer);border-radius:7px;padding:10px 12px;font-size:12.5px;line-height:1.85}
-  .texp code{font-family:var(--mono);background:#fff;border:1px solid var(--emer-bd);border-radius:5px;padding:1px 6px;color:#0b6a41;word-break:break-all}
 </style>
 </head>
 <body>
@@ -125,14 +115,12 @@
       <button id="tabSol" class="on">문제 풀이 해설</button>
       <button id="tabSub">제출 현황 · 채점</button>
       <button id="tabUnl">사용자 · 해금</button>
-      <button id="tabTry">풀어보기</button>
       <button id="tabQna">문의 게시판 <span id="qnaDot" class="dot hidden"></span></button>
       <button id="tabSys">시스템 정보</button>
     </div>
     <div id="solView"></div>
     <div id="subView" class="hidden"></div>
     <div id="unlockView" class="hidden"></div>
-    <div id="tryView" class="hidden"></div>
     <div id="qnaView" class="hidden"></div>
     <div id="sysView" class="hidden"></div>
   </div>
@@ -174,14 +162,14 @@ async function boot(){   // session-based auth (portal login as admin/p@ssw0rd)
 }
 boot();
 let curTab='sol';
-['Sol','Sub','Unl','Try','Qna','Sys'].forEach(x=>$('#tab'+x).onclick=()=>switchTab(x.toLowerCase()));
+['Sol','Sub','Unl','Qna','Sys'].forEach(x=>$('#tab'+x).onclick=()=>switchTab(x.toLowerCase()));
 function switchTab(t){
   curTab=t;
-  const tm={sol:'#tabSol',sub:'#tabSub',unl:'#tabUnl',try:'#tabTry',qna:'#tabQna',sys:'#tabSys'};
-  const vm={sol:'#solView',sub:'#subView',unl:'#unlockView',try:'#tryView',qna:'#qnaView',sys:'#sysView'};
+  const tm={sol:'#tabSol',sub:'#tabSub',unl:'#tabUnl',qna:'#tabQna',sys:'#tabSys'};
+  const vm={sol:'#solView',sub:'#subView',unl:'#unlockView',qna:'#qnaView',sys:'#sysView'};
   Object.entries(tm).forEach(([k,s])=>$(s).classList.toggle('on',k===t));
   Object.entries(vm).forEach(([k,s])=>$(s).classList.toggle('hidden',k!==t));
-  if(t==='sub')renderSubs(); if(t==='unl')renderUnlock(); if(t==='try')renderTry(); if(t==='qna')renderQna(); if(t==='sys')renderSys();
+  if(t==='sub')renderSubs(); if(t==='unl')renderUnlock(); if(t==='qna')renderQna(); if(t==='sys')renderSys();
 }
 /* clipboard that also works over plain HTTP */
 function copyText(t){ if(navigator.clipboard&&window.isSecureContext){return navigator.clipboard.writeText(t).catch(()=>fbCopy(t));} return fbCopy(t); }
@@ -299,6 +287,18 @@ async function renderSys(){
     <b>아이디</b> <code>${esc(user)}</code>${pw?` &nbsp;&nbsp;<b>비밀번호</b> <code>${esc(pw)}</code> <button class="btn sm" onclick="cpBtn(this,'${esc(pw)}')">복사</button>`:''}</div></div>`;
   const accts=Array.from({length:n},(_,i)=>'user_'+(i+1));
   $('#sysView').innerHTML=`
+    <div class="card" style="border-top:3px solid var(--pri)">
+      <div class="qtext">데이터셋 재생성</div>
+      <div class="kv" style="color:var(--ink2)">로그와 정답키를 <b>현재 시각 기준</b>으로 클린 재적재합니다. 실습 로그를 새로 찍고 싶을 때(예: 강의 당일) 사용하세요.
+        <ul style="margin:7px 0 4px;padding-left:18px;color:var(--ink2);font-size:13px">
+          <li>약 3~4분 소요 · 진행 중 포털이 잠깐 재시작될 수 있습니다</li>
+          <li>학생 진행(제출·점수·문의)은 <b>그대로 보존</b>됩니다</li>
+          <li>새 기수/재실습이면 먼저 <b>[사용자·해금 → 전체 초기화]</b>를 권장</li>
+        </ul></div>
+      <div id="rebBox" style="margin:10px 0"></div>
+      <button class="btn pri sm" id="rebBtn" onclick="rebuildStart()">데이터셋 재생성</button>
+      <button class="btn sm" onclick="rebuildStatus()">상태 새로고침</button>
+    </div>
     <div class="card hint-note">실습 운영에 필요한 접속 정보입니다. 학생 안내와 본인 로그인에 사용하세요. (복사 버튼은 HTTP에서도 동작)</div>
     ${box('Wazuh 대시보드', 'https://'+host+'/', c.wazuh_user||'admin', c.wazuh_pass||'(설치 로그의 Password 참조)')}
     ${box('‍강사 로그인 (포털)', 'http://'+host+':8081/', 'admin', 'p@ssw0rd')}
@@ -309,50 +309,36 @@ async function renderSys(){
     <div class="card"><div class="qtext">페이지 링크</div><div class="kv">
       학생 포털 <code>http://${esc(host)}:8081/</code><br>교안 <code>http://${esc(host)}:8081/guide</code><br>
       Wazuh 대시보드 <code>https://${esc(host)}/</code><br>라이브 데모 <code>http://${esc(host)}:8080/</code></div></div>`;
+  rebuildStatus();
 }
 
-/* ---- 풀어보기(미리보기): 학생처럼 문제 풀기 · 로컬 채점 · 학생 기록 무영향 ---- */
-function _norm(s){return (s||'').trim().toLowerCase().replace(/\s+/g,' ');}
-function _gradeLocal(rule, ans){
-  if(!rule||rule.mode==='manual')return 'manual';
-  const a=_norm(ans), acc=(rule.accept||[]).map(_norm);
-  if(rule.mode==='contains')return acc.some(t=>a.indexOf(t)>=0)?'correct':'wrong';
-  if(rule.mode==='all')return acc.every(t=>a.indexOf(t)>=0)?'correct':'wrong';
-  if(rule.mode==='any_n')return acc.filter(t=>a.indexOf(t)>=0).length>=(rule.n||1)?'correct':'wrong';
-  if(rule.mode==='word')return acc.some(t=>new RegExp('(?:^|[^a-z0-9_])'+t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?:[^a-z0-9_]|$)').test(a))?'correct':'wrong';
-  return 'wrong';
+/* ---- 데이터셋 재생성 (로그+정답키를 현재 시각 기준으로 클린 재적재) ---- */
+let rebPoll=null;
+async function rebuildStatus(){
+  try{const {d}=await jget('/api/instructor/rebuild/status?key='+encodeURIComponent(KEY));
+    const box=$('#rebBox'); if(!box)return d;
+    if(d.running){
+      box.className='card hint-note';
+      box.innerHTML=`<b>재생성 진행 중…</b> 약 3~4분 소요됩니다. 완료되면 포털이 잠깐 재시작될 수 있어요.<br><span style="font-size:12px;color:var(--ink3)">단계: ${esc(d.phase||'준비 중')}</span>`;
+    }else if(d.last_result){
+      const okr=d.last_result==='done';
+      box.className='card '+(okr?'':'hint-note');
+      box.innerHTML=`<b style="color:${okr?'var(--emer)':'var(--rose)'}">${okr?'재생성 완료':'재생성 실패'}</b> · 마지막 실행 ${esc(d.finished_at||'')}<br><span style="font-size:12px;color:var(--ink3)">${esc(d.tail||'')}</span>`;
+    }
+    return d;
+  }catch(e){return null;}
 }
-function renderTry(){
-  const head='<div class="card hint-note"><b>풀어보기(미리보기)</b> · 학생과 동일한 문제를 직접 풀어볼 수 있습니다. 채점은 브라우저에서 즉시 이뤄지며 <b>학생 데이터에 영향이 없습니다</b>. 실제 근거는 Wazuh(archives/alerts)에서 조회하세요.</div>';
-  const cards=SOL.questions.map(q=>{
-    const man=q.grade.mode==='manual';
-    return `<div class="card try" data-q="${q.qno}"><div class="qh"><div class="qno">${q.qno}</div><div style="flex:1;min-width:0">
-      <div class="badges"><span>${q.section}</span><span>난이도 ${q.diff}</span><span>${q.score}점</span><span class="${man?'man':'auto'}">${man?'서술형':'자동채점'}</span></div>
-      <div class="qtext">${esc(q.question)}</div>
-      ${q.primer?`<div class="tprimer">${esc(q.primer)}</div>`:''}
-      <div class="tfmt">형식: ${esc(q.fmt||'')}</div>
-      <div class="trow"><input class="tans" placeholder="${esc(q.fmt||'답 입력')}">
-        <button class="btn pri sm" onclick="tryGrade(${q.qno})">채점</button>
-        <button class="btn sm" onclick="tryReveal(${q.qno})">해설 보기</button></div>
-      <div class="tres" id="tres_${q.qno}"></div>
-      <div class="texp hidden" id="texp_${q.qno}"></div>
-    </div></div></div>`;
-  }).join('');
-  $('#tryView').innerHTML=head+cards;
-  $('#tryView').querySelectorAll('.tans').forEach(inp=>inp.addEventListener('keydown',e=>{
-    if(e.key==='Enter'){const q=inp.closest('.try').getAttribute('data-q');tryGrade(+q);}}));
-}
-window.tryGrade=function(qno){
-  const q=SOL.questions.find(x=>x.qno===qno); const card=document.querySelector('.try[data-q="'+qno+'"]');
-  const r=_gradeLocal(q.grade, card.querySelector('.tans').value); const el=$('#tres_'+qno);
-  if(r==='manual')el.innerHTML='<span class="tman">서술형 — 강사 판단 채점 문항입니다. 아래 해설을 참고하세요.</span>';
-  else if(r==='correct'){el.innerHTML='<span class="tok">정답</span>';tryReveal(qno);}
-  else el.innerHTML='<span class="tno">오답 — 다시 시도하거나 해설을 확인하세요.</span>';
-};
-window.tryReveal=function(qno){
-  const q=SOL.questions.find(x=>x.qno===qno); const e=q.explain||{}; const box=$('#texp_'+qno);
-  box.className='texp';
-  box.innerHTML=`<b>정답</b> ${esc(e.answer||q.answer||'')}<br><b>근거</b> ${esc(e.evidence||'')}<br><b>조회</b> <code>${esc(e.wazuh||'')}</code>${e.insight?'<br><b>분석 관점</b> '+esc(e.insight):''}`;
+window.rebuildStart=async()=>{
+  if(!confirm('로그와 정답키를 현재 시각 기준으로 새로 생성합니다.\n\n· 약 3~4분 소요 (진행 중 포털이 잠깐 재시작될 수 있음)\n· 학생 진행(제출·점수)은 그대로 보존됩니다\n· 새 기수라면 먼저 [사용자·해금 → 전체 초기화]를 권장\n\n계속할까요?'))return;
+  const {ok,d}=await jpost('/api/instructor/rebuild',{key:KEY});
+  if(!ok){alert('시작 실패: '+((d&&d.error)||'권한 오류'));return;}
+  if(d && d.already) alert('이미 재생성이 진행 중입니다.');
+  const b=$('#rebBtn'); if(b){b.disabled=true;b.textContent='진행 중…';}
+  if(rebPoll)clearInterval(rebPoll);
+  rebPoll=setInterval(async()=>{ const s=await rebuildStatus();
+    if(s&&!s.running){clearInterval(rebPoll);rebPoll=null;const bb=$('#rebBtn');if(bb){bb.disabled=false;bb.textContent='데이터셋 재생성';}}
+  },5000);
+  rebuildStatus();
 };
 </script>
 </body>
