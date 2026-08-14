@@ -99,12 +99,12 @@
 </head>
 <body>
   <div class="top"><div class="top-in">
-    <div class="brand"><span class="mk">🔐</span>강사 콘솔 <small>· SIEM 미션</small></div>
+    <div class="brand"><span class="mk"></span>강사 콘솔 <small>· SIEM 미션</small></div>
     <div id="topr"></div>
   </div></div>
 
   <div id="gate" class="gate">
-    <div class="gi">🔐</div>
+    <div class="gi"></div>
     <h1>강사 인증</h1>
     <p>강사 패스코드를 입력하세요.</p>
     <input id="keyInput" type="password" placeholder="강사 패스코드">
@@ -114,12 +114,12 @@
 
   <div id="app" class="wrap hidden">
     <div class="tabs">
-      <button id="tabSol" class="on">📘 문제 풀이 해설</button>
-      <button id="tabSub">📊 제출 현황 · 채점</button>
-      <button id="tabUnl">👥 사용자 · 해금</button>
-      <button id="tabTry">🎯 풀어보기</button>
-      <button id="tabQna">💬 문의 게시판 <span id="qnaDot" class="dot hidden"></span></button>
-      <button id="tabSys">⚙️ 시스템 정보</button>
+      <button id="tabSol" class="on">문제 풀이 해설</button>
+      <button id="tabSub">제출 현황 · 채점</button>
+      <button id="tabUnl">사용자 · 해금</button>
+      <button id="tabTry">풀어보기</button>
+      <button id="tabQna">문의 게시판 <span id="qnaDot" class="dot hidden"></span></button>
+      <button id="tabSys">시스템 정보</button>
     </div>
     <div id="solView"></div>
     <div id="subView" class="hidden"></div>
@@ -140,7 +140,7 @@ $('#gateBtn').onclick=enter;
 $('#keyInput').addEventListener('keydown',e=>{if(e.key==='Enter')enter();});
 function showApp(){
   $('#gate').classList.add('hidden'); $('#app').classList.remove('hidden');
-  $('#topr').innerHTML='<button class="btn sm" style="background:var(--pri-wash);border-color:var(--pri-bd);color:var(--pri-d)" onclick="location.href=\'/\'">🎯 미션 포털</button> <button class="btn ghost sm" onclick="window.open(\'http://\'+location.hostname+\':8080/\',\'_blank\')">🌐 데모 웹</button> <button class="btn ghost sm" onclick="window.open(\'https://\'+location.hostname,\'_blank\')">🛡 Wazuh</button> <button class="btn ghost sm" onclick="window.open(\'/guide\',\'_blank\')">📘 교안</button> <button class="btn ghost sm" id="outBtn">로그아웃</button>';
+  $('#topr').innerHTML='<button class="btn sm" style="background:var(--pri-wash);border-color:var(--pri-bd);color:var(--pri-d)" onclick="location.href=\'/\'">미션 포털</button> <button class="btn ghost sm" onclick="window.open(\'http://\'+location.hostname+\':8080/\',\'_blank\')">데모 웹</button> <button class="btn ghost sm" onclick="window.open(\'https://\'+location.hostname,\'_blank\')">Wazuh</button> <button class="btn ghost sm" onclick="window.open(\'/guide\',\'_blank\')">교안</button> <button class="btn ghost sm" id="outBtn">로그아웃</button>';
   const o=document.getElementById('outBtn'); if(o) o.onclick=async()=>{await fetch('/api/logout',{method:'POST'});location.href='/';};
   renderSolutions();
 }
@@ -168,7 +168,7 @@ function switchTab(t){
 /* clipboard that also works over plain HTTP */
 function copyText(t){ if(navigator.clipboard&&window.isSecureContext){return navigator.clipboard.writeText(t).catch(()=>fbCopy(t));} return fbCopy(t); }
 function fbCopy(t){const a=document.createElement('textarea');a.value=t;a.setAttribute('readonly','');a.style.position='fixed';a.style.top='-1000px';document.body.appendChild(a);a.focus();a.select();let ok=false;try{ok=document.execCommand('copy');}catch(e){}document.body.removeChild(a);return Promise.resolve(ok);}
-window.cpBtn=async(b,t)=>{await copyText(t);const o=b.textContent;b.textContent='복사됨 ✓';setTimeout(()=>b.textContent=o,1200);};
+window.cpBtn=async(b,t)=>{await copyText(t);const o=b.textContent;b.textContent='복사됨 ';setTimeout(()=>b.textContent=o,1200);};
 
 /* near-real-time: refresh the active tab automatically (skip while editing an input) */
 setInterval(async()=>{
@@ -190,7 +190,7 @@ function renderSolutions(){
     return `<div class="card"><div class="qh"><div class="qno">${q.qno}</div><div style="flex:1;min-width:0">
       <div class="badges"><span>${q.section}</span><span>${esc(q.type)}</span><span>난이도 ${q.diff}</span><span>${q.score}점</span><span class="${man?'man':'auto'}">${man?'수동채점':'자동채점'}</span></div>
       <div class="qtext">${esc(q.question)}</div>
-      <div class="ans"><b>✅ 정답</b> · ${esc(q.answer)}</div>
+      <div class="ans"><b>정답</b> · ${esc(q.answer)}</div>
       <div class="kv"><b>근거</b> ${esc(q.explain.evidence)}<br><b>조회</b> <code>${esc(q.explain.wazuh)}</code><br><b>채점</b> ${esc(gr)}</div>
       <div class="hintlist"><b>힌트</b><br>${hints}</div>
     </div></div></div>`;
@@ -201,7 +201,7 @@ async function renderSubs(){
   const {ok,d}=await jget('/api/instructor/submissions?key='+encodeURIComponent(KEY));
   if(!ok){$('#subView').innerHTML='<div class="card">권한 오류</div>';return;}
   const lb=await jget('/api/leaderboard?key='+encodeURIComponent(KEY));
-  const chips=((lb.d&&lb.d.board)||[]).map((r,i)=>`<span class="chip">${i+1}. <b>${esc(r.team)}</b> · ${r.score}점 · ${r.solved}✓</span>`).join('')||'<span class="chip">아직 제출 없음</span>';
+  const chips=((lb.d&&lb.d.board)||[]).map((r,i)=>`<span class="chip">${i+1}. <b>${esc(r.team)}</b> · ${r.score}점 · ${r.solved}</span>`).join('')||'<span class="chip">아직 제출 없음</span>';
   const rows=d.subs.map(s=>{
     const stc={correct:'st-correct',wrong:'st-wrong',manual:'st-manual',graded:'st-graded'}[s.status]||'';
     const act=s.manual&&s.status!=='graded'?`<input class="award" id="aw_${esc(s.team)}_${s.qno}" type="number" min="0" max="${s.max}" value="${s.max}"> <button class="btn sm" onclick="award('${esc(s.team)}',${s.qno})">채점</button>`:'';
@@ -229,7 +229,7 @@ async function renderUnlock(){
     <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
       <button class="btn sm" onclick="renderUnlock()">새로고침</button>
       <span style="flex:1"></span>
-      <button class="btn sm" style="color:var(--rose);border-color:var(--amber-bd)" onclick="resetAll()">⚠ 전체 초기화(재사용 시)</button></div>`;
+      <button class="btn sm" style="color:var(--rose);border-color:var(--amber-bd)" onclick="resetAll()">전체 초기화(재사용 시)</button></div>`;
 }
 window.resetUser=async(team)=>{ if(!confirm(team+' 학생의 제출·점수·힌트·해금을 모두 초기화할까요? (되돌릴 수 없습니다)'))return;
   await jpost('/api/instructor/reset',{key:KEY,team}); renderUnlock(); };
@@ -255,7 +255,7 @@ async function renderQna(){
   const body=tops.length
     ? tops.map(p=>{
         const rs=reps.filter(r=>r.parent===p.id);
-        const st=isAns(p)?'<span class="qstat done">✓ 답변완료</span>':'<span class="qstat wait">답변대기</span>';
+        const st=isAns(p)?'<span class="qstat done">답변완료</span>':'<span class="qstat wait">답변대기</span>';
         return `<div class="qthread">${st}${one(p,false)}${rs.map(r=>one(r,true)).join('')}</div>`;
       }).join('')
     : '<p style="color:var(--ink3);font-size:13px;padding:12px">아직 등록된 문의가 없습니다.</p>';
@@ -281,14 +281,14 @@ async function renderSys(){
     <b>아이디</b> <code>${esc(user)}</code>${pw?` &nbsp;&nbsp;<b>비밀번호</b> <code>${esc(pw)}</code> <button class="btn sm" onclick="cpBtn(this,'${esc(pw)}')">복사</button>`:''}</div></div>`;
   const accts=Array.from({length:n},(_,i)=>'user_'+(i+1));
   $('#sysView').innerHTML=`
-    <div class="card hint-note">⚙️ 실습 운영에 필요한 접속 정보입니다. 학생 안내와 본인 로그인에 사용하세요. (복사 버튼은 HTTP에서도 동작)</div>
-    ${box('🛡 Wazuh 대시보드', 'https://'+host+'/', c.wazuh_user||'admin', c.wazuh_pass||'(설치 로그의 Password 참조)')}
-    ${box('🧑‍🏫 강사 로그인 (포털)', 'http://'+host+':8081/', 'admin', 'p@ssw0rd')}
-    <div class="card"><div class="qtext">🎓 학생 포털 계정 · 총 ${n}개 (비밀번호 = 아이디)</div>
+    <div class="card hint-note">실습 운영에 필요한 접속 정보입니다. 학생 안내와 본인 로그인에 사용하세요. (복사 버튼은 HTTP에서도 동작)</div>
+    ${box('Wazuh 대시보드', 'https://'+host+'/', c.wazuh_user||'admin', c.wazuh_pass||'(설치 로그의 Password 참조)')}
+    ${box('‍강사 로그인 (포털)', 'http://'+host+':8081/', 'admin', 'p@ssw0rd')}
+    <div class="card"><div class="qtext">학생 포털 계정 · 총 ${n}개 (비밀번호 = 아이디)</div>
       <div class="kv"><b>주소</b> <code>http://${esc(host)}:8081/</code> <button class="btn sm" onclick="cpBtn(this,'http://${esc(host)}:8081/')">복사</button></div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:11px">${accts.map(a=>`<button class="btn sm ghost" onclick="cpBtn(this,'${a}')" title="아이디 복사(비번 동일)">${a}</button>`).join('')}</div>
       <div style="font-size:12px;color:var(--ink3);margin-top:9px">계정 버튼을 누르면 아이디가 복사됩니다. 비밀번호는 아이디와 동일합니다 (예: user_1 / user_1).</div></div>
-    <div class="card"><div class="qtext">🔗 페이지 링크</div><div class="kv">
+    <div class="card"><div class="qtext">페이지 링크</div><div class="kv">
       학생 포털 <code>http://${esc(host)}:8081/</code><br>교안 <code>http://${esc(host)}:8081/guide</code><br>
       Wazuh 대시보드 <code>https://${esc(host)}/</code><br>라이브 데모 <code>http://${esc(host)}:8080/</code></div></div>`;
 }
@@ -305,13 +305,13 @@ function _gradeLocal(rule, ans){
   return 'wrong';
 }
 function renderTry(){
-  const head='<div class="card hint-note">🎯 <b>풀어보기(미리보기)</b> · 학생과 동일한 문제를 직접 풀어볼 수 있습니다. 채점은 브라우저에서 즉시 이뤄지며 <b>학생 데이터에 영향이 없습니다</b>. 실제 근거는 Wazuh(archives/alerts)에서 조회하세요.</div>';
+  const head='<div class="card hint-note"><b>풀어보기(미리보기)</b> · 학생과 동일한 문제를 직접 풀어볼 수 있습니다. 채점은 브라우저에서 즉시 이뤄지며 <b>학생 데이터에 영향이 없습니다</b>. 실제 근거는 Wazuh(archives/alerts)에서 조회하세요.</div>';
   const cards=SOL.questions.map(q=>{
     const man=q.grade.mode==='manual';
     return `<div class="card try" data-q="${q.qno}"><div class="qh"><div class="qno">${q.qno}</div><div style="flex:1;min-width:0">
       <div class="badges"><span>${q.section}</span><span>난이도 ${q.diff}</span><span>${q.score}점</span><span class="${man?'man':'auto'}">${man?'서술형':'자동채점'}</span></div>
       <div class="qtext">${esc(q.question)}</div>
-      ${q.primer?`<div class="tprimer">💡 ${esc(q.primer)}</div>`:''}
+      ${q.primer?`<div class="tprimer">${esc(q.primer)}</div>`:''}
       <div class="tfmt">형식: ${esc(q.fmt||'')}</div>
       <div class="trow"><input class="tans" placeholder="${esc(q.fmt||'답 입력')}">
         <button class="btn pri sm" onclick="tryGrade(${q.qno})">채점</button>
@@ -327,9 +327,9 @@ function renderTry(){
 window.tryGrade=function(qno){
   const q=SOL.questions.find(x=>x.qno===qno); const card=document.querySelector('.try[data-q="'+qno+'"]');
   const r=_gradeLocal(q.grade, card.querySelector('.tans').value); const el=$('#tres_'+qno);
-  if(r==='manual')el.innerHTML='<span class="tman">✎ 서술형 — 강사 판단 채점 문항입니다. 아래 해설을 참고하세요.</span>';
-  else if(r==='correct'){el.innerHTML='<span class="tok">✓ 정답</span>';tryReveal(qno);}
-  else el.innerHTML='<span class="tno">✗ 오답 — 다시 시도하거나 해설을 확인하세요.</span>';
+  if(r==='manual')el.innerHTML='<span class="tman">서술형 — 강사 판단 채점 문항입니다. 아래 해설을 참고하세요.</span>';
+  else if(r==='correct'){el.innerHTML='<span class="tok">정답</span>';tryReveal(qno);}
+  else el.innerHTML='<span class="tno">오답 — 다시 시도하거나 해설을 확인하세요.</span>';
 };
 window.tryReveal=function(qno){
   const q=SOL.questions.find(x=>x.qno===qno); const e=q.explain||{}; const box=$('#texp_'+qno);

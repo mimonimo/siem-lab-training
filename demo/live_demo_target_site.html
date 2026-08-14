@@ -225,7 +225,7 @@
     <nav class="gnb"><a data-nav="home" class="on">홈</a><a data-nav="notices">공지사항</a><a data-nav="board">게시판</a>
       <a data-nav="docs">문서함</a><a data-nav="approval">전자결재</a><a data-nav="leave">근태/휴가</a><a data-nav="help">헬프데스크</a></nav>
     <div class="userbox">
-      <div class="bell" id="bell">🔔<span class="bdg" id="bellBadge">3</span>
+      <div class="bell" id="bell"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span class="bdg" id="bellBadge">3</span>
         <div class="belldd" id="bellDd"></div></div>
       <span class="av">김</span>김현우 대리 · 정보보안팀<button class="lout" id="loutBtn">로그아웃</button></div>
   </div>
@@ -235,7 +235,7 @@
     <div class="page active" data-page="home">
       <section class="hero" style="grid-column:1/3">
         <div class="pill">2026 상반기 정보보안 캠페인</div>
-        <h1>안녕하세요, 김현우님 👋</h1>
+        <h1>안녕하세요, 김현우님 </h1>
         <p>포털 통합 검색입니다. 문서·공지·게시글을 한 번에 찾아보세요.</p>
         <div class="searchbar">
           <input id="q" placeholder="검색어를 입력하세요 (문서·공지·게시글 통합 검색)">
@@ -255,10 +255,10 @@
       <aside class="card">
         <h2><span class="dot"></span>바로가기</h2>
         <div class="quick">
-          <a data-nav="notices"><span class="ic">📢</span>공지사항</a>
-          <a data-nav="board"><span class="ic">💬</span>자유게시판</a>
-          <a data-nav="docs"><span class="ic">📁</span>문서함</a>
-          <a data-nav="help"><span class="ic">🛠️</span>헬프데스크</a>
+          <a data-nav="notices">공지사항</a>
+          <a data-nav="board">자유게시판</a>
+          <a data-nav="docs">문서함</a>
+          <a data-nav="help">헬프데스크</a>
         </div>
       </aside>
       <section class="card" style="grid-column:1/3">
@@ -365,7 +365,7 @@
           <input id="tTitle" placeholder="제목">
           <textarea id="tBody" placeholder="문의 내용을 입력하세요"></textarea>
           <div class="row" style="justify-content:space-between;align-items:center">
-            <label class="attach">📎 파일 첨부<input type="file" id="tFile" hidden></label>
+            <label class="attach">파일 첨부<input type="file" id="tFile" hidden></label>
             <button id="tBtn">문의 등록</button></div>
           <div class="searchres" id="tRes" style="background:#fef0ee;border-color:#f1c7c0;color:#8a3227"></div>
         </div>
@@ -380,7 +380,7 @@
       <h3><span class="live"></span>실습 콘솔 · 실시간 공격 시뮬레이터</h3>
       <div class="con-head-r">
         <button id="conWazuh">Wazuh 열기 ↗</button>
-        <button id="conClose">✕ 닫기</button>
+        <button id="conClose">닫기</button>
       </div>
     </div>
     <div class="con-body" id="conBody">
@@ -405,7 +405,7 @@
       </div>
     </div>
   </div>
-  <button class="conopen" id="conOpen">🖥 실습 콘솔 열기</button>
+  <button class="conopen" id="conOpen">실습 콘솔 열기</button>
 
 <script>
 (function(){
@@ -474,7 +474,7 @@
       .then(function(r){return r.json();}).then(function(j){
         var res=$('#qRes');
         if(j.flagged){res.className='searchres on';
-          res.innerHTML='⚠ '+j.detail+(j.expect?' → <b>'+j.expect+'</b>':'')+'<br><span style="opacity:.85;font-size:12px">입력값: <code>'+esc(j.echo)+'</code></span>';}
+          res.innerHTML=''+j.detail+(j.expect?' → <b>'+j.expect+'</b>':'')+'<br><span style="opacity:.85;font-size:12px">입력값: <code>'+esc(j.echo)+'</code></span>';}
         else res.className='searchres';
         showBanner(j); refresh(15);
       });
@@ -542,7 +542,7 @@
     fetch('/demo/ticket',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({body:body})})
       .then(function(r){return r.json();}).then(function(j){
         var res=$('#tRes'); res.style.display='block';
-        res.textContent=(j.flagged?'⚠ ':'✅ ')+(j.detail||'')+(j.expect?' → '+j.expect:'');
+        res.textContent=(j.flagged?'':'')+(j.detail||'')+(j.expect?' → '+j.expect:'');
         showBanner(j); refresh(15); $('#tBody').value='';
       });
   };
@@ -654,7 +654,7 @@
     fetch('/demo/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filename:fn})})
       .then(function(r){return r.json();}).then(function(j){
         var res=$('#tRes'); res.style.display='block';
-        res.textContent=(j.flagged?'⚠ ':'📎 ')+(j.detail||'')+(j.expect?' → '+j.expect:'');
+        res.textContent=(j.flagged?'':'')+(j.detail||'')+(j.expect?' → '+j.expect:'');
         toast(j.flagged?'의심스러운 파일 업로드가 감지되었습니다.':'파일이 첨부되었습니다.', j.flagged?'warn':'ok');
         showBanner(j); refresh(15);
       });

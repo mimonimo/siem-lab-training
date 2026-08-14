@@ -221,49 +221,54 @@
   @keyframes flash{0%,40%{box-shadow:0 0 0 3px var(--pri-wash),var(--sh-md)}100%{box-shadow:var(--sh-sm)}}
 
   /* ---------- Q&A board ---------- */
-  .drawer .panel.wide{width:452px}
-  .qna-list{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
-  .qpost{border:1px solid var(--bd);border-radius:11px;padding:10px 12px;background:var(--panel2)}
-  .qpost.reply{margin-left:22px;background:var(--emer-wash);border-color:var(--emer-bd)}
-  .qpost .ph{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;margin-bottom:4px}
-  .qpost .ph .who{color:var(--ink)}
-  .qpost .ph .rl{font-size:9.5px;font-weight:750;padding:1px 7px;border-radius:20px;background:var(--pri-wash);color:var(--pri)}
-  .qpost .ph .rl.instr{background:var(--emer-wash);color:var(--emer)}
-  .qpost .ph .tm{color:var(--ink3);font-weight:500;font-size:11px;margin-left:auto}
-  .qpost .bd{font-size:13px;color:var(--ink);line-height:1.6;white-space:pre-wrap;word-break:break-word}
-  .qpost .rbtn{font-size:11px;color:var(--pri);cursor:pointer;font-weight:700;margin-top:6px;display:inline-block}
-  .qna-compose{display:flex;flex-direction:column;gap:8px}
-  .qna-compose textarea{width:100%;padding:10px 12px;border:1.5px solid var(--bd2);border-radius:10px;font-size:13px;
-    font-family:inherit;background:var(--panel2);outline:none;resize:vertical;min-height:66px;color:var(--ink)}
-  .qna-compose textarea:focus{border-color:var(--pri);background:#fff;box-shadow:var(--ring)}
-  .qna-row{display:flex;align-items:center;gap:10px}
-  .qna-row input{width:160px;padding:8px 11px;border:1.5px solid var(--bd2);border-radius:9px;font-size:12.5px;outline:none;background:var(--panel2)}
-  .qna-row input:focus{border-color:var(--pri);background:#fff;box-shadow:var(--ring)}
-  .qna-reply-lbl{font-size:12px;color:var(--pri-d);font-weight:650}
-  .qcancel{color:var(--rose);cursor:pointer;margin-left:6px;font-weight:600}
-  .qna-empty{color:var(--ink3);font-size:13px;text-align:center;padding:24px 0;line-height:1.7}
-  .qthread{position:relative;background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:12px 13px 10px;box-shadow:var(--sh-sm)}
-  .qthread .qpost{border:0;background:transparent;padding:2px 0 8px}
-  .qthread .qpost.reply{margin-left:14px;padding-left:12px;border-left:2px solid var(--emer-bd);background:transparent}
-  .qstat{float:right;font-size:10.5px;font-weight:750;padding:2px 9px;border-radius:20px}
-  .qstat.wait{background:var(--amber-wash);color:var(--amber);border:1px solid var(--amber-bd)}
-  .qstat.done{background:var(--emer-wash);color:var(--emer);border:1px solid var(--emer-bd)}
-  .rl.qn{background:var(--panel3);color:var(--ink2)}
-  .qreply{border:1px solid var(--bd);background:var(--panel2);color:var(--pri);border-radius:8px;padding:4px 11px;font-size:11.5px;font-weight:700;cursor:pointer;margin-top:2px}
-  .qreply:hover{background:var(--pri-wash);border-color:var(--pri-bd)}
+  .qpanel{width:420px;max-width:92vw;height:100%;display:flex;flex-direction:column;background:var(--panel);box-shadow:-14px 0 40px -12px rgba(15,23,42,.35);animation:slide .24s cubic-bezier(.2,.8,.2,1)}
+  .qhd{flex:none;padding:15px 18px;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;align-items:flex-start}
+  .qhd b{font-size:15px}.qhd small{display:block;font-size:11.5px;color:var(--ink3);margin-top:2px;font-weight:400}
+  .qhd .x{cursor:pointer;color:var(--ink3);font-size:24px;line-height:1}
+  .qna-list{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:12px;background:var(--bg)}
+  .qthread{background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:12px 13px;box-shadow:var(--sh-sm)}
+  .qtop{display:flex;align-items:center;gap:7px;margin-bottom:7px;flex-wrap:wrap}
+  .qav{width:26px;height:26px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:750;color:#fff;background:var(--ink3)}
+  .qav.instr{background:var(--emer)}.qav.me{background:var(--pri)}
+  .qwho{font-weight:700;font-size:13px}
+  .qrole{font-size:9.5px;font-weight:750;padding:1px 6px;border-radius:20px;background:var(--panel3);color:var(--ink2)}
+  .qrole.instr{background:var(--emer-wash);color:var(--emer)}
+  .qtag{font-size:10px;font-weight:700;color:var(--pri);background:var(--pri-wash);border:1px solid var(--pri-bd);border-radius:5px;padding:0 6px}
+  .qtime{font-size:11px;color:var(--ink3)}
+  .qstatus{margin-left:auto;font-size:10px;font-weight:750;padding:2px 9px;border-radius:20px}
+  .qstatus.wait{background:var(--amber-wash);color:var(--amber)}.qstatus.done{background:var(--emer-wash);color:var(--emer)}
+  .qbody{font-size:13.5px;line-height:1.62;color:var(--ink);white-space:pre-wrap;word-break:break-word}
+  .qreplies{margin:10px 0 0;display:flex;flex-direction:column;gap:8px;border-left:2px solid var(--bd);padding-left:11px}
+  .qrep{background:var(--panel2);border-radius:9px;padding:8px 10px}
+  .qrep.instr{background:var(--emer-wash);border:1px solid var(--emer-bd)}
+  .qact{margin-top:9px}
+  .qact button{border:1px solid var(--bd);background:var(--panel2);color:var(--pri);border-radius:7px;padding:4px 12px;font-size:11.5px;font-weight:700;cursor:pointer}
+  .qact button:hover{background:var(--pri-wash);border-color:var(--pri-bd)}
+  .qempty{text-align:center;color:var(--ink3);font-size:13px;padding:44px 16px;line-height:1.8}
+  .qcompose{flex:none;border-top:1px solid var(--bd);padding:11px 14px;background:var(--panel)}
+  .qcbar{display:flex;align-items:center;gap:8px;margin-bottom:8px;min-height:16px}
+  .qcqno{display:inline-flex;align-items:center;gap:2px;font-size:11.5px;color:var(--ink2);font-weight:650;background:var(--panel3);border:1px solid var(--bd);border-radius:7px;padding:2px 6px}
+  .qcqno input{width:30px;border:0;background:transparent;outline:none;font-size:12px;font-weight:700;text-align:center;color:var(--ink)}
+  .qreplylbl{font-size:12px;color:var(--pri-d);font-weight:700}
+  .qcancel{color:var(--rose);cursor:pointer;margin-left:6px;font-weight:600;font-size:11px}
+  .qcin{display:flex;gap:8px;align-items:flex-end}
+  .qcin textarea{flex:1;padding:10px 12px;border:1.5px solid var(--bd2);border-radius:12px;font-size:13px;font-family:inherit;background:var(--panel2);outline:none;resize:none;min-height:42px;max-height:120px;line-height:1.5;color:var(--ink)}
+  .qcin textarea:focus{border-color:var(--pri);background:#fff;box-shadow:var(--ring)}
+  .qsend{flex:none;height:42px;padding:0 16px;border-radius:10px;background:var(--pri);color:#fff;border:0;font-size:13.5px;font-weight:700;cursor:pointer}
+  .qsend:hover{background:var(--pri-d)}
   .hidden{display:none!important}
   @media(max-width:720px){.tiles{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
   <header class="hdr"><div class="hdr-in">
-    <div class="brand"><span class="mk">🛡</span><span>Bridgeworks Security <small>· 위협 탐지 실습</small></span></div>
+    <div class="brand"><span class="mk"></span><span>Bridgeworks Security <small>· 위협 탐지 실습</small></span></div>
     <div class="hdr-r" id="hdrR"></div>
   </div></header>
 
   <div id="loginView" class="login-wrap">
     <div class="login">
-      <div class="ic">🛡</div>
+      <div class="ic"></div>
       <h1>위협 탐지 미션</h1>
       <p class="sub">배정받은 계정으로 로그인하면 실습이 시작됩니다.</p>
       <div class="fld"><label>아이디</label><input id="userInput" placeholder="user_1" autocomplete="username"></div>
@@ -288,15 +293,14 @@
     <div id="bonWrap"></div>
   </div>
 
-  <div class="drawer" id="qnaDrawer"><div class="panel wide">
-    <h3>💬 문의 게시판 <span class="x" id="qnaX">×</span></h3>
-    <p style="font-size:12px;color:var(--ink3);margin:-6px 0 12px">궁금한 점을 남기면 강사와 다른 학생이 함께 볼 수 있습니다.</p>
+  <div class="drawer" id="qnaDrawer"><div class="panel qpanel">
+    <div class="qhd"><div><b>문의 게시판</b><small>강사·학생이 함께 보는 Q&amp;A</small></div><span class="x" id="qnaX">×</span></div>
     <div class="qna-list" id="qnaList"></div>
-    <div class="qna-compose">
-      <div class="qna-row"><input id="qnaQno" type="number" min="1" placeholder="관련 문항 번호 (선택)">
-        <span id="qnaReplyLbl" class="qna-reply-lbl"></span></div>
-      <textarea id="qnaText" placeholder="궁금한 점을 남겨 주세요. (예: Q3에서 웹셸 파일을 어디서 찾나요?)"></textarea>
-      <button class="go" id="qnaSend" style="padding:11px">문의 등록</button>
+    <div class="qcompose">
+      <div class="qcbar"><span class="qcqno">Q<input id="qnaQno" type="number" min="1" placeholder="?"></span>
+        <span id="qnaReplyLbl" class="qreplylbl"></span></div>
+      <div class="qcin"><textarea id="qnaText" placeholder="궁금한 점을 남겨 주세요"></textarea>
+        <button id="qnaSend" class="qsend">등록</button></div>
     </div>
   </div></div>
 
@@ -334,23 +338,23 @@ function enterMission(){
   const isInstr = CFG.role==='instructor';
   const label = isInstr ? '강사 · 미리보기' : CFG.team;
   const ini = isInstr ? '강' : (CFG.team.match(/\d+/)||[CFG.team[0]])[0];
-  const instrBtn = isInstr ? `<button class="hbtn" onclick="location.href='/instructor'" style="background:var(--pri-wash);border-color:var(--pri-bd);color:var(--pri-d);font-weight:750">🛠 강사 도구</button>` : '';
+  const instrBtn = isInstr ? `<button class="hbtn" onclick="location.href='/instructor'" style="background:var(--pri-wash);border-color:var(--pri-bd);color:var(--pri-d);font-weight:750">강사 도구</button>` : '';
   $('#hdrR').innerHTML=`<div class="chip"><span class="av">${esc(ini)}</span>${esc(label)}</div>
     ${instrBtn}
     <button class="hbtn pri" onclick="window.open('${wz}','_blank')">Wazuh 대시보드 ↗</button>
-    <button class="hbtn" onclick="window.open('/guide','_blank')">📘 교안</button>
-    <button class="hbtn" id="qnaBtn">💬 문의</button>
+    <button class="hbtn" onclick="window.open('/guide','_blank')">교안</button>
+    <button class="hbtn" id="qnaBtn">문의</button>
     <button class="hbtn" id="logoutBtn">로그아웃</button>`;
   $('#logoutBtn').onclick=async()=>{await jpost('/api/logout');location.reload();};
   $('#qnaBtn').onclick=openQna; $('#qnaX').onclick=closeQna; $('#qnaSend').onclick=sendQna;
   $('#qnaDrawer').onclick=e=>{if(e.target.id==='qnaDrawer')closeQna();};
   const dt=CFG.dataset_time||''; const wu=CFG.wazuh_user||'admin', wpw=CFG.wazuh_pass||'';
-  const cred = wpw ? `<span class="wzcred">🔑 Wazuh 로그인 · <b>${esc(wu)}</b> / <code>${esc(wpw)}</code>
+  const cred = wpw ? `<span class="wzcred">Wazuh 로그인 · <b>${esc(wu)}</b> / <code>${esc(wpw)}</code>
     <button class="copybtn" id="wzCopy">복사</button></span>` : '';
   const instrNote = isInstr ? `<span style="background:var(--pri-wash);border:1px solid var(--pri-bd);color:var(--pri-d);border-radius:20px;padding:2px 11px;font-weight:700;font-size:11.5px">강사 미리보기 — 전체 해금 · 학생 점수와 분리</span> ` : '';
   $('#ctxBar').innerHTML=`<span class="dot"></span>${instrNote}<span>이 로그셋 기준 시각 <b>${esc(dt)}</b> · 이벤트는 <b>이전 24시간</b> 내 분포 (Wazuh 비면 <b>Last 1 year</b>)</span>
     <span class="sp"></span>${cred}`;
-  const wc=$('#wzCopy'); if(wc) wc.onclick=async()=>{await copyText(wpw);wc.textContent='복사됨 ✓';setTimeout(()=>wc.textContent='복사',1200);};
+  const wc=$('#wzCopy'); if(wc) wc.onclick=async()=>{await copyText(wpw);wc.textContent='복사됨 ';setTimeout(()=>wc.textContent='복사',1200);};
   loadQuestions();
 }
 function badge(q){
@@ -358,29 +362,29 @@ function badge(q){
   if(!q.auto) b+=`<span class="man">강사채점</span>`; if(q.discuss) b+=`<span class="disc">조별토의</span>`;
   return b;
 }
-function hintsHtml(st){return (st.hints||[]).map(h=>`<div class="hintline"><span>💡</span><span>${esc(h)}</span></div>`).join('');}
+function hintsHtml(st){return (st.hints||[]).map(h=>`<div class="hintline"><span></span><span>${esc(h)}</span></div>`).join('');}
 function explainHtml(ex){ if(!ex)return'';
-  const steps=(ex.steps&&ex.steps.length)?`<div class="insight"><span class="it">🧭 풀이 단계</span><br>${ex.steps.map((s,i)=>(i+1)+'. '+esc(s)).join('<br>')}</div>`:'';
-  const ins=ex.insight?`<div class="insight"><span class="it">🔎 분석 관점</span><br>${esc(ex.insight)}</div>`:'';
-  return `<div class="explain"><div class="et">📘 해설</div>
+  const steps=(ex.steps&&ex.steps.length)?`<div class="insight"><span class="it">풀이 단계</span><br>${ex.steps.map((s,i)=>(i+1)+'. '+esc(s)).join('<br>')}</div>`:'';
+  const ins=ex.insight?`<div class="insight"><span class="it">분석 관점</span><br>${esc(ex.insight)}</div>`:'';
+  return `<div class="explain"><div class="et">해설</div>
     <span class="kk">정답</span> ${esc(ex.answer)}<br>
     <span class="kk">근거</span> ${esc(ex.evidence)}<br>
     <span class="kk">조회</span> <code>${esc(ex.wazuh)}</code>${steps}${ins}</div>`;
 }
 function fbHtml(st){
   if(!st||!st.status) return '';
-  if(st.status==='correct') return `<div class="fb ok">✓ 정답 · +${st.score}점 획득</div>`;
-  if(st.status==='graded')  return `<div class="fb man">✓ 채점 완료 · ${st.score}점</div>`;
+  if(st.status==='correct') return `<div class="fb ok">정답 · +${st.score}점 획득</div>`;
+  if(st.status==='graded')  return `<div class="fb man">채점 완료 · ${st.score}점</div>`;
   if(st.status==='manual')  return `<div class="fb man">⏳ 제출됨 · 강사 채점 대기</div>`;
-  if(st.status==='wrong')   return `<div class="fb no">✗ 오답 (${st.wrong_count}회) · 오답당 −${CFG.wrong_penalty}점</div>`;
+  if(st.status==='wrong')   return `<div class="fb no">오답 (${st.wrong_count}회) · 오답당 −${CFG.wrong_penalty}점</div>`;
   return '';
 }
 function qCard(q){
   if(q.locked){
     return `<div class="q locked" data-qno="${q.qno}"><div class="q-in">
-      <div class="qno">🔒</div><div class="qb">
+      <div class="qno"></div><div class="qb">
         <div class="badges"><span>${q.stage}단계</span><span class="sc">${q.score}점</span></div>
-        <div class="lockmsg">🔒 이전 단계를 완료하면 열립니다</div>
+        <div class="lockmsg">이전 단계를 완료하면 열립니다</div>
       </div></div></div>`;
   }
   const st=q.state||{};
@@ -388,7 +392,7 @@ function qCard(q){
   const cls=solved?'q solved':((st.status==='manual'||st.status==='graded')?'q manualdone':'q');
   const hu=st.hints_used||0;
   const nextCost=(hu+1)*(CFG.hint_penalty||1);
-  const hintBtn=(solved||hu>=q.max_hints)?'':`<button class="hintbtn">💡 힌트 (다음 −${nextCost}점) · ${hu}/${q.max_hints}</button>`;
+  const hintBtn=(solved||hu>=q.max_hints)?'':`<button class="hintbtn">힌트 (다음 −${nextCost}점) · ${hu}/${q.max_hints}</button>`;
   const av=esc(st.answer||'');
   const field = q.auto
     ? `<input placeholder="${esc(q.fmt||'답안 입력')}" value="${av}" ${solved?'disabled':''}>`
@@ -398,9 +402,9 @@ function qCard(q){
     <div class="qb">
       <div class="badges">${badge(q)}</div>
       <div class="qtext">${esc(q.question)}</div>
-      ${q.primer?`<div class="primer">💡 <b>이해 돕기</b> · ${esc(q.primer)}<a href="/guide" target="_blank">교안 ↗</a></div>`:''}
+      ${q.primer?`<div class="primer"><b>이해 돕기</b> · ${esc(q.primer)}<a href="/guide" target="_blank">교안 ↗</a></div>`:''}
       <div class="hints">${hintsHtml(st)}</div>
-      <div class="fmt">📝 답안 형식 · <b>${esc(q.fmt||'')}</b></div>
+      <div class="fmt">답안 형식 · <b>${esc(q.fmt||'')}</b></div>
       <div class="ansrow">${field}<button class="submit" ${solved?'disabled':''}>제출</button></div>
       <div class="toolrow">${hintBtn}</div>
       ${fbHtml(st)}${explainHtml(st.explain)}
@@ -424,10 +428,10 @@ function renderNav(){
     const t=q.locked?'잠김':(q.question||'').slice(0,42);
     return `<div class="${c}" ${q.locked?'':`onclick="jumpTo(${q.qno})"`} title="${esc(t)}">${q.qno}</div>`;
   };
-  $('#qnav').innerHTML=`<div class="nt">🧭 문항 바로가기
+  $('#qnav').innerHTML=`<div class="nt">문항 바로가기
       <span class="lg"><span class="sw" style="background:linear-gradient(140deg,#12a150,#0ea5a4);border-color:transparent"></span>완료</span>
       <span class="lg"><span class="sw" style="background:#eef2f8"></span>진행 가능</span>
-      <span class="lg"><span class="sw" style="background:#eef2f8;opacity:.7"></span>🔒 잠김</span></div>
+      <span class="lg"><span class="sw" style="background:#eef2f8;opacity:.7"></span>잠김</span></div>
     <div class="grid">${QS.map(chip).join('')}</div>`;
 }
 window.jumpTo=(qno)=>{const el=document.querySelector(`.q[data-qno="${qno}"]`);
@@ -458,27 +462,32 @@ let qnaTimer=null, qnaReplyTo=0;
 function openQna(){$('#qnaDrawer').classList.add('on');loadQna();if(qnaTimer)clearInterval(qnaTimer);qnaTimer=setInterval(loadQna,7000);}
 function closeQna(){$('#qnaDrawer').classList.remove('on');if(qnaTimer){clearInterval(qnaTimer);qnaTimer=null;}}
 function fmtTime(t){const d=new Date(t*1000);const p=n=>('0'+n).slice(-2);return p(d.getHours())+':'+p(d.getMinutes());}
+function qAvatar(p,me){const cls=p.role==='instructor'?'instr':(me?'me':'');
+  const m=(p.author||'').match(/\d+/); const ini=p.role==='instructor'?'강':(m?m[0]:(p.author||'?')[0]);
+  return `<span class="qav ${cls}">${esc(ini)}</span>`;}
+function qHead(p,me,extra){return `<div class="qtop">${qAvatar(p,me)}<span class="qwho">${esc(p.author)}</span>`+
+  `<span class="qrole ${p.role==='instructor'?'instr':''}">${p.role==='instructor'?'강사':'학생'}</span>`+
+  (p.qno?`<span class="qtag">Q${p.qno}</span>`:'')+`<span class="qtime">${fmtTime(p.ts)}</span>${extra||''}</div>`;}
 async function loadQna(){
   const d=await jget('/api/qna');
-  if(d.error){$('#qnaList').innerHTML=`<p class="qna-empty">${esc(d.error)}</p>`;return;}
+  if(d.error){$('#qnaList').innerHTML=`<div class="qempty">${esc(d.error)}</div>`;return;}
   const posts=d.posts||[], tops=posts.filter(p=>!p.parent), reps=posts.filter(p=>p.parent);
-  const one=(p,isr)=>`<div class="qpost ${isr?'reply':''}"><div class="ph">
-      <span class="who">${esc(p.author)}</span>
-      <span class="rl ${p.role==='instructor'?'instr':''}">${p.role==='instructor'?'강사':'학생'}</span>
-      ${p.qno?`<span class="rl qn">Q${p.qno}</span>`:''}<span class="tm">${fmtTime(p.ts)}</span></div>
-      <div class="bd">${esc(p.body)}</div></div>`;
-  if(!tops.length){$('#qnaList').innerHTML='<p class="qna-empty">아직 등록된 문의가 없습니다.<br>궁금한 점을 남겨 보세요 🙂</p>';return;}
+  const me=CFG.team;
+  if(!tops.length){$('#qnaList').innerHTML='<div class="qempty">아직 등록된 문의가 없습니다.<br>궁금한 점을 남겨 보세요.</div>';return;}
+  const nearBottom = (()=>{const el=$('#qnaList');return el&&(el.scrollHeight-el.scrollTop-el.clientHeight<60);})();
   $('#qnaList').innerHTML=tops.map(p=>{
     const rs=reps.filter(r=>r.parent===p.id);
     const answered=rs.some(r=>r.role==='instructor');
-    const st=answered?'<span class="qstat done">✓ 답변완료</span>':'<span class="qstat wait">답변대기</span>';
-    return `<div class="qthread">${st}${one(p,false)}${rs.map(r=>one(r,true)).join('')}
-      <button class="qreply" onclick="qnaReply(${p.id},'${esc(p.author)}')">↳ 답글</button></div>`;
+    const st=answered?'<span class="qstatus done">답변완료</span>':'<span class="qstatus wait">답변대기</span>';
+    const replies=rs.length?`<div class="qreplies">${rs.map(r=>`<div class="qrep ${r.role==='instructor'?'instr':''}">${qHead(r,r.author===me)}<div class="qbody">${esc(r.body)}</div></div>`).join('')}</div>`:'';
+    return `<div class="qthread">${qHead(p,p.author===me,st)}<div class="qbody">${esc(p.body)}</div>${replies}
+      <div class="qact"><button onclick="qnaReply(${p.id},'${esc(p.author)}')">답글 달기</button></div></div>`;
   }).join('');
+  if(nearBottom){const el=$('#qnaList');el.scrollTop=el.scrollHeight;}
 }
 window.qnaReply=(id,who)=>{qnaReplyTo=id;const t=$('#qnaText');
-  $('#qnaReplyLbl').innerHTML=`↳ <b>${esc(who||'')}</b> 님 글에 답글 <span class="qcancel" onclick="qnaCancelReply()">취소</span>`;
-  t.focus();t.scrollIntoView({block:'nearest'});};
+  $('#qnaReplyLbl').innerHTML=`${esc(who||'')} 님에게 답글 <span class="qcancel" onclick="qnaCancelReply()">취소</span>`;
+  t.focus();};
 window.qnaCancelReply=()=>{qnaReplyTo=0;$('#qnaReplyLbl').innerHTML='';};
 async function sendQna(){const t=$('#qnaText');const v=(t.value||'').trim();if(!v)return;
   const qno=parseInt($('#qnaQno').value,10)||0;
@@ -489,7 +498,7 @@ function renderStages(stages){
   $('#stagesStrip').innerHTML=stages.map(s=>{
     const pct=s.total?Math.round(s.done/s.total*100):0;
     return `<div class="stg ${s.unlocked?'unlocked':'locked'}">
-      <div class="sh"><span>${esc(s.name)}</span><span class="st">${s.unlocked?'열림':'🔒 잠김'}</span></div>
+      <div class="sh"><span>${esc(s.name)}</span><span class="st">${s.unlocked?'열림':'잠김'}</span></div>
       <div class="cnt">${s.done}/${s.total} 완료</div>
       <div class="sbar"><i style="width:${pct}%"></i></div></div>`;
   }).join('');
