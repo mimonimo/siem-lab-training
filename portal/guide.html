@@ -101,6 +101,12 @@
     .diagram{overflow:visible;border:1px solid #c3ccdb}
     .diagram svg{width:100%;height:auto}
     .shot{border:1px solid #c3ccdb}
+    .shot svg{width:100%;height:auto} .shot img{max-width:100%;height:auto}
+    /* 각 번호 섹션을 새 페이지에서 시작 → 문서(챕터) 느낌 */
+    .sec{break-before:page;page-break-before:always}
+    #s1{break-before:auto;page-break-before:auto}
+    /* 표가 페이지를 넘길 때 머리글 반복 */
+    thead{display:table-header-group} tr{page-break-inside:avoid}
     /* 어두운 코드블록 → 밝게(잉크 절약·문서 톤) */
     .anat{background:#f5f7fa!important;border:1px solid #c3ccdb;break-inside:avoid}
     .anat pre{color:#1a1c21!important}

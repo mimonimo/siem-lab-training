@@ -193,7 +193,7 @@ function renderSolutions(){
     const man=q.grade.mode==='manual';
     const hints=(q.hints||[]).map((h,i)=>`${i+1}) ${esc(h)}`).join('<br>');
     const gr=man?'수동채점':(q.grade.mode+' · 정답토큰: '+(q.grade.accept||[]).join(', ')+(q.grade.n?` (${q.grade.n}개↑)`:''));
-    return `<div class="card"><div class="qh"><div class="qno">${q.qno}</div><div style="flex:1;min-width:0">
+    return `<div class="card" id="solq_${q.qno}"><div class="qh"><div class="qno">${q.qno}</div><div style="flex:1;min-width:0">
       <div class="badges"><span>${q.section}</span><span>${esc(q.type)}</span><span>난이도 ${q.diff}</span><span>${q.score}점</span><span class="${man?'man':'auto'}">${man?'수동채점':'자동채점'}</span></div>
       <div class="qtext">${esc(q.question)}</div>
       <div class="ans"><b>정답</b> · ${esc(q.answer)}</div>
@@ -236,15 +236,16 @@ function cohortSummary(subs, board){
      .filter(x=>x.att>0).sort((a,b)=>a.rate-b.rate || b.att-a.att).slice(0,6);
   const stat=(label,val,sub)=>`<div style="flex:1;min-width:96px"><div style="font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-.5px">${val}</div><div style="font-size:11.5px;color:var(--ink3);font-weight:600">${label}${sub?` <span style="color:var(--ink3)">${sub}</span>`:''}</div></div>`;
   const bar=x=>{const pct=Math.round(x.rate*100);const col=pct<40?'var(--rose)':pct<70?'var(--amber)':'var(--emer)';
-    return `<div style="display:flex;align-items:center;gap:9px;padding:5px 0;border-bottom:1px dashed var(--bd)">
+    return `<div onclick="gotoSolution(${x.qno})" title="클릭하면 해당 문항 해설로 이동" style="display:flex;align-items:center;gap:9px;padding:5px 4px;border-bottom:1px dashed var(--bd);cursor:pointer;border-radius:6px" onmouseover="this.style.background='var(--panel2)'" onmouseout="this.style.background=''">
       <span class="qno" style="width:24px;height:24px;font-size:12px">${x.qno}</span>
       <span style="flex:1;min-width:0;font-size:12.5px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(qtitle(x.qno))}</span>
       <span style="width:120px;height:8px;background:var(--panel3);border-radius:6px;overflow:hidden;flex:none"><span style="display:block;height:100%;width:${pct}%;background:${col}"></span></span>
       <span style="width:74px;text-align:right;font-size:11.5px;color:var(--ink3);flex:none">정답 ${x.ok}/${x.att} (${pct}%)</span></div>`;};
   if(!subs.length) return `<div class="card hint-note">아직 제출이 없습니다. 학생들이 답안을 제출하면 이곳에 참여율·평균·문항별 정답률이 집계됩니다.</div>`;
   return `<div class="card">
-    <div class="qtext">현황 요약</div>
-    <div style="display:flex;gap:14px;flex-wrap:wrap;margin:4px 0 6px">
+    <div style="display:flex;align-items:center;gap:10px"><div class="qtext" style="flex:1">현황 요약</div>
+      <button class="btn sm" onclick="exportCSV()">성적 CSV 내보내기</button></div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;margin:8px 0 6px">
       ${stat('참여 학생',teams.length+'명')}
       ${stat('평균 점수',avg+'점')}
       ${stat('최고 점수',max+'점')}
@@ -255,6 +256,26 @@ function cohortSummary(subs, board){
     ${missed.map(bar).join('')||'<div style="font-size:12.5px;color:var(--ink3);padding:6px 0">집계할 데이터가 아직 적습니다.</div>'}
   </div>`;
 }
+window.gotoSolution=(qno)=>{
+  switchTab('sol');
+  setTimeout(()=>{const el=document.getElementById('solq_'+qno);
+    if(el){el.scrollIntoView({behavior:'smooth',block:'start'});
+      el.style.transition='box-shadow .3s'; el.style.boxShadow='0 0 0 3px var(--pri-wash)';
+      setTimeout(()=>el.style.boxShadow='',1500);}},130);
+};
+window.exportCSV=async()=>{
+  const {ok,d}=await jget('/api/instructor/submissions?key='+encodeURIComponent(KEY));
+  if(!ok){alert('권한 오류');return;}
+  if(!d.subs.length){alert('내보낼 제출 데이터가 없습니다.');return;}
+  const head=['team','qno','status','score','max','hints_used','wrong_count','answer'];
+  const rows=[head];
+  d.subs.forEach(s=>rows.push([s.team,s.qno,s.status,s.score,s.max,s.hints_used,s.wrong_count,(s.answer||'').replace(/\r?\n/g,' ')]));
+  const csv=rows.map(r=>r.map(c=>{const v=(c==null?'':String(c));return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(',')).join('\r\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=url; a.download='siem-lab-grades.csv'; document.body.appendChild(a); a.click();
+  setTimeout(()=>{document.body.removeChild(a); URL.revokeObjectURL(url);},500);
+};
 window.award=async(team,qno)=>{const v=+document.getElementById(`aw_${team}_${qno}`).value;await jpost('/api/instructor/grade',{key:KEY,team,qno,award:v});renderSubs();};
 async function renderUnlock(){
   const {ok,d}=await jget('/api/instructor/users?key='+encodeURIComponent(KEY));

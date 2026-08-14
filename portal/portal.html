@@ -212,6 +212,11 @@
   .qchip.done{background:var(--amber);color:#fff;border-color:transparent}
   .qchip.locked{background:var(--panel3);color:var(--ink3);cursor:not-allowed;opacity:.7}
   .qchip.bon{border-style:dashed}
+  .navfilter{margin-left:auto;border:1px solid var(--bd2);background:var(--panel);color:var(--ink2);border-radius:20px;padding:3px 11px;font-size:11.5px;font-weight:650;cursor:pointer;transition:.12s}
+  .navfilter:hover{border-color:var(--pri);color:var(--pri)}
+  .navfilter.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+  .navleft{font-size:11px;font-weight:700;color:var(--pri);background:var(--pri-wash);border:1px solid var(--pri-bd);border-radius:20px;padding:2px 9px;margin-left:8px}
+  .only-unsolved .q.solved,.only-unsolved .q.manualdone,.only-unsolved .q.locked{display:none}
   .q{scroll-margin-top:124px}
   .q.flash{animation:flash 1.1s ease}
   @keyframes flash{0%,40%{box-shadow:0 0 0 3px var(--pri-wash),var(--sh-md)}100%{box-shadow:var(--sh-sm)}}
@@ -433,11 +438,21 @@ function renderNav(){
     const t=q.locked?'잠김':(q.question||'').slice(0,42);
     return `<div class="${c}" ${q.locked?'':`onclick="jumpTo(${q.qno})"`} title="${esc(t)}">${q.qno}</div>`;
   };
+  const remain=QS.filter(q=>!q.locked && !(q.state&&['correct','graded','manual'].includes(q.state.status))).length;
   $('#qnav').innerHTML=`<div class="nt">문항 바로가기
       <span class="lg"><span class="sw" style="background:var(--emer);border-color:transparent"></span>완료</span>
       <span class="lg"><span class="sw" style="background:#eef2f8"></span>진행 가능</span>
-      <span class="lg"><span class="sw" style="background:#eef2f8;opacity:.7"></span>잠김</span></div>
+      <span class="lg"><span class="sw" style="background:#eef2f8;opacity:.7"></span>잠김</span>
+      <span class="navleft">남은 미해결 ${remain}</span>
+      <button id="filterUnsolved" class="navfilter" onclick="toggleUnsolved()">미해결만 보기</button></div>
     <div class="grid">${QS.map(chip).join('')}</div>`;
+  applyFilter();
+}
+let onlyUnsolved=false;
+window.toggleUnsolved=()=>{onlyUnsolved=!onlyUnsolved; applyFilter();};
+function applyFilter(){
+  const v=$('#missionView'); if(v)v.classList.toggle('only-unsolved',onlyUnsolved);
+  const b=$('#filterUnsolved'); if(b){b.classList.toggle('on',onlyUnsolved); b.textContent=onlyUnsolved?'전체 보기':'미해결만 보기';}
 }
 window.jumpTo=(qno)=>{const el=document.querySelector(`.q[data-qno="${qno}"]`);
   if(el){el.scrollIntoView({behavior:'smooth',block:'start'});el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');}};
