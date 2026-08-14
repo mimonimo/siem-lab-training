@@ -84,7 +84,8 @@
       <div class="toc">
         <a href="#s1">① 구성도</a><a href="#s2">② 시나리오</a><a href="#s3">③ 로그 소스</a>
         <a href="#s4">④ 로그 라인 해부</a><a href="#s5">⑤ 분석 방법론</a><a href="#s6">⑥ Wazuh 실전</a>
-        <a href="#s7">⑦ 탐지 룰</a><a href="#s8">⑧ 주의점</a><a href="#s9">⑨ 용어집</a>
+        <a href="#s7">⑦ 실전 예제</a><a href="#s8">⑧ MITRE ATT&CK</a><a href="#s9">⑨ 탐지 룰</a>
+        <a href="#s10">⑩ 주의점·오탐</a><a href="#s11">⑪ 용어집</a>
       </div>
     </div>
 
@@ -248,9 +249,47 @@ Aug 13 04:38:05 siem sshd[22004]: <span class="hl2">Failed password</span> for i
       ⚠️ <b>대문자·특수문자(:)</b>가 든 값은 따옴표 검색이 안 걸릴 수 있습니다. 이럴 땐 <b>와일드카드</b>를 쓰세요 — 예: <code>full_log:*NOPASSWD*</code>.</div>
     </div>
 
-    <!-- 7. 탐지 룰 -->
+    <!-- 7. 실전 예제 -->
     <div class="sec" id="s7">
-      <h2><span class="n">7</span>대표 탐지 룰</h2>
+      <h2><span class="n">7</span>실전 예제 — 웹셸 침해를 처음부터 끝까지 추적</h2>
+      <p class="sub">알림 한 건에서 출발해 전체 공격 체인을 복원하는, 분석가의 실제 사고 흐름입니다.</p>
+      <ol class="steps">
+        <li><b>알림에서 출발</b> — 탐지 알림에서 웹셸 명령 실행(rule.id 100101)이 보입니다. 먼저 이 알림들을 엽니다.
+          <div class="q">rule.id:100101</div>
+          access.log에 <code>GET /search.php?cmd=id</code> 같은 요청이 있고, 출발지 IP가 <code>198.51.100.23</code> 임을 확인합니다.</li>
+        <li><b>공격자로 피벗(pivot)</b> — 그 IP가 남긴 모든 흔적을 한 번에 모읍니다.
+          <div class="q">data.srcip:"198.51.100.23"</div>
+          인증(auth)·웹(access)·감사(audit) 로그가 함께 나옵니다. 한 IP가 <b>여러 로그 소스에 걸쳐 있다는 것</b> 자체가 평범한 사용자와 다른 신호입니다.</li>
+        <li><b>최초 침투 확인</b> — auth.log에서 다수 <code>Failed password</code> 뒤 <code>Accepted password for webadmin</code> 을 찾습니다. 브루트포스가 성공한 그 시각이 침투 기점입니다.</li>
+        <li><b>실제 실행 여부 교차검증</b> — 웹 요청이 정말 실행됐는지 감사 로그로 확인합니다.
+          <div class="q">full_log:"webshell_exec"</div>
+          <code>comm="id"</code>·<code>comm="wget"</code> 등 실행 프로세스가 보이고, 요청(access)과 실행(audit)의 시각이 일치하면 실제 실행이 확정됩니다.</li>
+        <li><b>후속 행위 추적</b> — 다운로드 → 지속성 → 유출로 이어집니다.
+          <div class="q">full_log:"/tmp/.cache/kworker"</div><div class="q">full_log:"loot.tgz"</div>
+          wget 다운로드 → cron 반복 실행(지속성) → tar 압축 → curl 외부 업로드(<code>198.51.100.47</code>) 순서로 연결됩니다.</li>
+        <li><b>결론·대응</b> — 침투→명령실행→다운로드→지속성→권한상승→유출까지 <b>동일 공격자의 단일 체인</b>으로 재구성됩니다. 대응: 계정 잠금 · 웹셸 제거 · cron/sudoers 백도어 제거 · 유출 범위 확인.</li>
+      </ol>
+      <div class="tip">💡 <b>분석의 뼈대</b> — ‘알림 1건 → 출발지로 피벗 → 여러 로그를 시간축으로 연결 → 실행 여부 교차검증’. 이 네 단계는 어떤 침해 분석에도 그대로 적용됩니다.</div>
+    </div>
+
+    <!-- 8. MITRE ATT&CK -->
+    <div class="sec" id="s8">
+      <h2><span class="n">8</span>MITRE ATT&amp;CK 매핑</h2>
+      <p class="sub">이 시나리오의 사건을 표준 공격 전술·기법으로 분류하면 다음과 같습니다. (보너스 문항과 연결됩니다)</p>
+      <div class="tablewrap"><table>
+        <tr><th style="width:110px">전술</th><th style="width:190px">기법(Technique)</th><th>이 실습의 사건</th></tr>
+        <tr><td>초기 접근</td><td>T1110 Brute Force</td><td>SSH 브루트포스로 webadmin 계정 탈취 (A1)</td></tr>
+        <tr><td>실행</td><td>T1059 Command &amp; Scripting</td><td>웹셸 cmd= 파라미터로 원격 명령 실행 (A3)</td></tr>
+        <tr><td>지속성</td><td>T1053 Scheduled Task/Job</td><td>/etc/cron.d 에 매분·재부팅 실행 등록 (A5)</td></tr>
+        <tr><td>권한 상승</td><td>T1548.003 Sudo and Sudo Caching</td><td>sudoers.d NOPASSWD 백도어 (B1)</td></tr>
+        <tr><td>방어 회피</td><td>T1036 Masquerading</td><td>/usr/bin/backup 시스템 명령 위장 (A6)</td></tr>
+        <tr><td>수집·유출</td><td>T1560 Archive · T1041 Exfiltration</td><td>tar 압축 후 외부로 curl 업로드 (E1·E2)</td></tr>
+      </table></div>
+    </div>
+
+    <!-- 9. 탐지 룰 -->
+    <div class="sec" id="s9">
+      <h2><span class="n">9</span>대표 탐지 룰</h2>
       <div class="tablewrap"><table>
         <tr><th style="width:120px">rule.id</th><th>의미</th><th>스토리라인</th></tr>
         <tr><td>100101</td><td>웹셸 명령 실행 시도 (URL cmd=)</td><td>A · E</td></tr>
@@ -263,9 +302,9 @@ Aug 13 04:38:05 siem sshd[22004]: <span class="hl2">Failed password</span> for i
       </table></div>
     </div>
 
-    <!-- 8. 주의점 -->
-    <div class="sec" id="s8">
-      <h2><span class="n">8</span>주의점 & 팁</h2>
+    <!-- 10. 주의점 -->
+    <div class="sec" id="s10">
+      <h2><span class="n">10</span>주의점 & 오탐 판별 체크리스트</h2>
       <ul>
         <li><b>시간 필터 함정</b> — 로그는 기준 시각(포털 상단) 이전 24시간에 분포합니다. Discover가 비면 시간 범위를 <b>Last 1 year</b>로.</li>
         <li><b>알림 ≠ 침해</b> — 미끼(C·D·F)도 알림/이상 로그를 남깁니다. 조사 후 대응 필요성으로 판단하세요.</li>
@@ -273,11 +312,19 @@ Aug 13 04:38:05 siem sshd[22004]: <span class="hl2">Failed password</span> for i
         <li><b>안전한 실습</b> — 모든 공격 아티팩트(웹셸·백도어·변조 바이너리)는 <b>실행되지 않는 더미</b>입니다.</li>
         <li><b>답안 형식</b> — 포털의 "답안 형식"에 맞춰 입력(시각 <span class="kbd">HH:MM:SS</span>, IP <span class="kbd">xxx.xxx.xxx.xxx</span>). 오답은 감점, 힌트는 누적 감점(−1·−2·−3).</li>
       </ul>
+      <h3>🧪 오탐 판별 체크리스트 (알림을 만났을 때)</h3>
+      <div class="tablewrap"><table>
+        <tr><th style="width:230px">질문</th><th>‘대응 필요’ 신호</th><th>‘저위험/오탐’ 신호</th></tr>
+        <tr><td>성공 응답·후속 행위가 있나?</td><td>200 응답 + 이어지는 명령/다운로드</td><td>404만 다수(C 스캐너), 실패만 존재(F 잠금)</td></tr>
+        <tr><td>출발지가 어디인가?</td><td>외부·미확인 IP(198.51.100.x)</td><td>사내 LAN·관리자 IP(192.168.208.50, D)</td></tr>
+        <tr><td>계정·작업이 업무와 맞나?</td><td>탈취 계정으로 비정상 명령</td><td>관리자 계정의 정기 배포(D)</td></tr>
+        <tr><td>방어가 이미 작동했나?</td><td>인증 성공이 섞여 있음</td><td>연속 실패 후 계정 잠금(F)</td></tr>
+      </table></div>
     </div>
 
-    <!-- 9. 용어집 -->
-    <div class="sec" id="s9">
-      <h2><span class="n">9</span>용어집</h2>
+    <!-- 11. 용어집 -->
+    <div class="sec" id="s11">
+      <h2><span class="n">11</span>용어집</h2>
       <div class="tablewrap"><table>
         <tr><th style="width:150px">용어</th><th>뜻</th></tr>
         <tr><td>웹셸(web shell)</td><td>웹서버에 올려두고 URL로 명령을 실행시키는 악성 스크립트. 여기선 비동작 더미.</td></tr>
