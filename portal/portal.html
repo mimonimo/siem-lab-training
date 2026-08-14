@@ -243,6 +243,8 @@
   .cmsg.mine{align-self:flex-end;background:var(--pri-wash);border-color:var(--pri-bd);border-top-left-radius:12px;border-top-right-radius:4px}
   .cmsg.instr{background:var(--emer-wash);border-color:var(--emer-bd)}
   .cmsg .qtop{margin-bottom:5px}
+  .qna-list .cdate{align-self:center;margin:2px 0;font-size:11px;font-weight:700}
+  .qna-list .cdate span{background:var(--panel3);border:1px solid var(--bd);color:var(--ink3);border-radius:20px;padding:3px 13px}
   .qreplies{margin:10px 0 0;display:flex;flex-direction:column;gap:8px;border-left:2px solid var(--bd);padding-left:11px}
   .qrep{background:var(--panel2);border-radius:9px;padding:8px 10px}
   .qrep.instr{background:var(--emer-wash);border:1px solid var(--emer-bd)}
@@ -485,6 +487,7 @@ let qnaTimer=null;
 function openQna(){$('#qnaDrawer').classList.add('on');loadQna();if(qnaTimer)clearInterval(qnaTimer);qnaTimer=setInterval(loadQna,6000);}
 function closeQna(){$('#qnaDrawer').classList.remove('on');if(qnaTimer){clearInterval(qnaTimer);qnaTimer=null;}}
 function fmtTime(t){const d=new Date(t*1000);const p=n=>('0'+n).slice(-2);return p(d.getHours())+':'+p(d.getMinutes());}
+function qFmtDay(t){const x=new Date(t*1000);return (x.getMonth()+1)+'월 '+x.getDate()+'일';}
 function qHead(p,me){const instr=p.role==='instructor';
   const m=(p.author||'').match(/\d+/); const ini=instr?'강':(me?'나':(m?m[0]:(p.author||'?')[0]));
   return `<div class="qtop"><span class="qav ${instr?'instr':(me?'me':'')}">${esc(ini)}</span>`+
@@ -496,8 +499,11 @@ async function loadQna(){
   const posts=(d.posts||[]).slice().sort((a,b)=>a.ts-b.ts||a.id-b.id); const me=CFG.team;
   if(!posts.length){$('#qnaList').innerHTML='<div class="qempty">아직 메시지가 없습니다.<br>편하게 질문을 남겨 보세요.</div>';return;}
   const nearBottom = (()=>{const el=$('#qnaList');return el&&(el.scrollHeight-el.scrollTop-el.clientHeight<80);})();
-  $('#qnaList').innerHTML=posts.map(p=>{const mine=p.author===me;
-    return `<div class="cmsg ${p.role==='instructor'?'instr':(mine?'mine':'')}">${qHead(p,mine)}<div class="qbody">${esc(p.body)}</div></div>`;}).join('');
+  let html='', lastDay='';
+  posts.forEach(p=>{const mine=p.author===me; const day=qFmtDay(p.ts);
+    if(day!==lastDay){html+=`<div class="cdate"><span>${day}</span></div>`;lastDay=day;}
+    html+=`<div class="cmsg ${p.role==='instructor'?'instr':(mine?'mine':'')}">${qHead(p,mine)}<div class="qbody">${esc(p.body)}</div></div>`;});
+  $('#qnaList').innerHTML=html;
   if(nearBottom){const el=$('#qnaList');el.scrollTop=el.scrollHeight;}
 }
 async function sendQna(){const t=$('#qnaText');const v=(t.value||'').trim();if(!v)return;

@@ -86,6 +86,10 @@
   .chatmsg{max-width:86%;align-self:flex-start;background:#fff;border:1px solid var(--bd);border-radius:12px;border-top-left-radius:4px;padding:8px 12px;box-shadow:var(--sh-sm)}
   .chatmsg.me{align-self:flex-end;background:var(--pri-wash);border-color:var(--pri-bd);border-radius:12px;border-top-right-radius:4px}
   .chatmsg .cmh{display:flex;align-items:center;gap:7px;font-size:11.5px;margin-bottom:3px}
+  .chatlog .cdate{align-self:center;margin:4px 0 2px;font-size:10.5px;font-weight:700}
+  .chatlog .cdate span{background:var(--panel3);border:1px solid var(--bd);color:var(--ink3);border-radius:20px;padding:2px 12px}
+  .chatmsg .cmh .cav{width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:750;color:#fff;background:var(--ink3);flex:none}
+  .chatmsg .cmh .cav.instr{background:var(--emer)}
   .chatmsg .cmh .who{font-weight:750;color:var(--ink)}
   .chatmsg .cmh .rl{font-size:9.5px;font-weight:750;padding:1px 7px;border-radius:20px;background:var(--panel3);color:var(--ink2)}
   .chatmsg .cmh .rl.instr{background:var(--emer-wash);color:var(--emer);border:1px solid var(--emer-bd)}
@@ -323,16 +327,21 @@ window.resetAll=async()=>{ if(!confirm('모든 학생의 진행 상황을 초기
   const {d}=await jpost('/api/instructor/reset',{key:KEY,team:'*'}); alert('초기화 완료'+(d&&d.cleared!=null?` (${d.cleared}명)`:'')); renderStudents(); };
 
 /* ---- 문의 채팅 (강사) : 20명 오픈 채팅 · 문항 태그 없음 ---- */
-function fmtT(t){const x=new Date(t*1000);const p=n=>('0'+n).slice(-2);return p(x.getMonth()+1)+'/'+p(x.getDate())+' '+p(x.getHours())+':'+p(x.getMinutes());}
+function fmtT(t){const x=new Date(t*1000);const p=n=>('0'+n).slice(-2);return p(x.getHours())+':'+p(x.getMinutes());}
+function fmtDay(t){const x=new Date(t*1000);return (x.getMonth()+1)+'월 '+x.getDate()+'일';}
+function avOf(p){const instr=p.role==='instructor';const m=(p.author||'').match(/\d+/);return instr?'강':(m?m[0]:(p.author||'?').slice(-1));}
 async function renderQna(){
   const {d}=await jget('/api/qna?key='+encodeURIComponent(KEY));
   const posts=((d&&d.posts)||[]).slice().sort((a,b)=>a.ts-b.ts||a.id-b.id);
   const bub=p=>{const instr=p.role==='instructor';
-    return `<div class="chatmsg ${instr?'me':''}"><div class="cmh"><span class="who">${esc(p.author)}</span>`
+    return `<div class="chatmsg ${instr?'me':''}"><div class="cmh"><span class="cav ${instr?'instr':''}">${esc(avOf(p))}</span>`
+      +`<span class="who">${esc(p.author)}</span>`
       +`<span class="rl ${instr?'instr':''}">${instr?'강사':'학생'}</span><span class="tm">${fmtT(p.ts)}</span>`
       +`<span class="del" onclick="qnaDel(${p.id})">삭제</span></div><div class="cmb">${esc(p.body)}</div></div>`;};
-  const body=posts.length?posts.map(bub).join('')
-    :'<div style="color:var(--ink3);font-size:13px;padding:20px;text-align:center">아직 메시지가 없습니다.<br>학생들의 질문이 여기에 실시간으로 표시됩니다.</div>';
+  let bodyHtml='', lastDay='';
+  posts.forEach(p=>{const day=fmtDay(p.ts); if(day!==lastDay){bodyHtml+=`<div class="cdate"><span>${day}</span></div>`;lastDay=day;} bodyHtml+=bub(p);});
+  const body=posts.length?bodyHtml
+    :'<div style="color:var(--ink3);font-size:13px;padding:24px;text-align:center">아직 메시지가 없습니다.<br>학생들의 질문이 여기에 실시간으로 표시됩니다.</div>';
   $('#qnaView').innerHTML=`<div class="card" style="padding:0;overflow:hidden">
     <div class="chatlog" id="chatLog">${body}</div>
     <div class="chatbar"><textarea id="iQnaText" placeholder="메시지를 입력하세요 · 전체 학생에게 공지·답변됩니다 (Enter 전송 · Shift+Enter 줄바꿈)"></textarea>
