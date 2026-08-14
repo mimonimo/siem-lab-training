@@ -318,7 +318,6 @@ function fallbackCopy(t){const ta=document.createElement('textarea');ta.value=t;
   document.body.removeChild(ta);return Promise.resolve(ok);}
 
 async function boot(){CFG=await jget('/api/config');
-  if(CFG.role==='instructor'){location.href='/instructor';return;}
   if(CFG.team)enterMission(); else $('#loginView').classList.remove('hidden');}
 $('#startBtn').onclick=async()=>{
   const u=$('#userInput').value.trim(),p=$('#passInput').value.trim();
@@ -332,8 +331,12 @@ $('#startBtn').onclick=async()=>{
 function enterMission(){
   $('#loginView').classList.add('hidden'); $('#missionView').classList.remove('hidden');
   const wz=CFG.wazuh_url||('https://'+location.hostname);
-  const ini=(CFG.team.match(/\d+/)||[CFG.team[0]])[0];
-  $('#hdrR').innerHTML=`<div class="chip"><span class="av">${esc(ini)}</span>${esc(CFG.team)}</div>
+  const isInstr = CFG.role==='instructor';
+  const label = isInstr ? '강사 · 미리보기' : CFG.team;
+  const ini = isInstr ? '강' : (CFG.team.match(/\d+/)||[CFG.team[0]])[0];
+  const instrBtn = isInstr ? `<button class="hbtn" onclick="location.href='/instructor'" style="background:var(--pri-wash);border-color:var(--pri-bd);color:var(--pri-d);font-weight:750">🛠 강사 도구</button>` : '';
+  $('#hdrR').innerHTML=`<div class="chip"><span class="av">${esc(ini)}</span>${esc(label)}</div>
+    ${instrBtn}
     <button class="hbtn pri" onclick="window.open('${wz}','_blank')">Wazuh 대시보드 ↗</button>
     <button class="hbtn" onclick="window.open('/guide','_blank')">📘 교안</button>
     <button class="hbtn" id="qnaBtn">💬 문의</button>
@@ -344,7 +347,8 @@ function enterMission(){
   const dt=CFG.dataset_time||''; const wu=CFG.wazuh_user||'admin', wpw=CFG.wazuh_pass||'';
   const cred = wpw ? `<span class="wzcred">🔑 Wazuh 로그인 · <b>${esc(wu)}</b> / <code>${esc(wpw)}</code>
     <button class="copybtn" id="wzCopy">복사</button></span>` : '';
-  $('#ctxBar').innerHTML=`<span class="dot"></span><span>이 로그셋 기준 시각 <b>${esc(dt)}</b> · 이벤트는 <b>이전 24시간</b> 내 분포 (Wazuh 비면 <b>Last 1 year</b>)</span>
+  const instrNote = isInstr ? `<span style="background:var(--pri-wash);border:1px solid var(--pri-bd);color:var(--pri-d);border-radius:20px;padding:2px 11px;font-weight:700;font-size:11.5px">강사 미리보기 — 전체 해금 · 학생 점수와 분리</span> ` : '';
+  $('#ctxBar').innerHTML=`<span class="dot"></span>${instrNote}<span>이 로그셋 기준 시각 <b>${esc(dt)}</b> · 이벤트는 <b>이전 24시간</b> 내 분포 (Wazuh 비면 <b>Last 1 year</b>)</span>
     <span class="sp"></span>${cred}`;
   const wc=$('#wzCopy'); if(wc) wc.onclick=async()=>{await copyText(wpw);wc.textContent='복사됨 ✓';setTimeout(()=>wc.textContent='복사',1200);};
   loadQuestions();

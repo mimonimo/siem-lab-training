@@ -140,7 +140,7 @@ $('#gateBtn').onclick=enter;
 $('#keyInput').addEventListener('keydown',e=>{if(e.key==='Enter')enter();});
 function showApp(){
   $('#gate').classList.add('hidden'); $('#app').classList.remove('hidden');
-  $('#topr').innerHTML='<button class="btn ghost sm" onclick="window.open(\'http://\'+location.hostname+\':8080/\',\'_blank\')">🌐 데모 웹</button> <button class="btn ghost sm" onclick="window.open(\'https://\'+location.hostname,\'_blank\')">🛡 Wazuh</button> <button class="btn ghost sm" onclick="window.open(\'/guide\',\'_blank\')">📘 교안</button> <button class="btn ghost sm" id="outBtn">로그아웃</button>';
+  $('#topr').innerHTML='<button class="btn sm" style="background:var(--pri-wash);border-color:var(--pri-bd);color:var(--pri-d)" onclick="location.href=\'/\'">🎯 미션 포털</button> <button class="btn ghost sm" onclick="window.open(\'http://\'+location.hostname+\':8080/\',\'_blank\')">🌐 데모 웹</button> <button class="btn ghost sm" onclick="window.open(\'https://\'+location.hostname,\'_blank\')">🛡 Wazuh</button> <button class="btn ghost sm" onclick="window.open(\'/guide\',\'_blank\')">📘 교안</button> <button class="btn ghost sm" id="outBtn">로그아웃</button>';
   const o=document.getElementById('outBtn'); if(o) o.onclick=async()=>{await fetch('/api/logout',{method:'POST'});location.href='/';};
   renderSolutions();
 }

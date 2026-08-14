@@ -20,6 +20,7 @@ DB_PATH   = os.environ.get("PORTAL_DB", "/opt/siem-lab/portal/portal.db")
 INSTRUCTOR_KEY = os.environ.get("PORTAL_INSTRUCTOR_KEY", "bridgeworks-instructor")
 INSTRUCTOR_USER = os.environ.get("PORTAL_INSTRUCTOR_USER", "admin")
 INSTRUCTOR_PASS = os.environ.get("PORTAL_INSTRUCTOR_PASS", "p@ssw0rd")
+INSTRUCTOR_TEAM = "__instructor__"     # instructor's own preview team (all stages unlocked)
 WAZUH_URL = os.environ.get("PORTAL_WAZUH_URL", "")
 WAZUH_USER = os.environ.get("PORTAL_WAZUH_USER", "admin")
 WAZUH_PASS = os.environ.get("PORTAL_WAZUH_PASS", "")
@@ -87,6 +88,7 @@ def get_override(team):
     return r["override"] if r else 0
 def unlocked_stage(team):
     if not team: return 1
+    if team == INSTRUCTOR_TEAM: return NUM_STAGES     # 강사 미리보기는 전체 해금
     u = 1
     for s in range(1, NUM_STAGES):
         qs = stage_qnos(s)
@@ -182,8 +184,8 @@ def api_login():
     d = request.json or {}
     u = (d.get("username","") or "").strip().lower(); p = (d.get("password","") or "").strip()
     if u == INSTRUCTOR_USER.lower() and p == INSTRUCTOR_PASS:      # instructor via portal login
-        session.pop("team", None); session["role"] = "instructor"
-        return jsonify(role="instructor")
+        session["role"] = "instructor"; session["team"] = INSTRUCTOR_TEAM   # 강사=학생기능+강사도구
+        return jsonify(role="instructor", team=INSTRUCTOR_TEAM)
     if not valid_login(u, p):
         return jsonify(error="아이디 또는 비밀번호가 올바르지 않습니다"), 401
     session.pop("role", None); session["team"] = u
@@ -277,7 +279,8 @@ def api_leaderboard():
         return jsonify(error="unauthorized"), 403
     rows = db().execute("""SELECT team, COALESCE(SUM(score),0) s,
                              SUM(status='correct') solved
-                           FROM sub GROUP BY team ORDER BY s DESC, solved DESC LIMIT 40""").fetchall()
+                           FROM sub WHERE team != ? GROUP BY team
+                           ORDER BY s DESC, solved DESC LIMIT 40""", (INSTRUCTOR_TEAM,)).fetchall()
     return jsonify(board=[{"team": r["team"], "score": r["s"], "solved": r["solved"]} for r in rows])
 
 # ------------------------------------------------------------ instructor --- #
@@ -320,7 +323,7 @@ def api_instr_users():
     if not _auth_instr(): return jsonify(error="unauthorized"), 403
     seen = {r["team"] for r in db().execute("SELECT DISTINCT team FROM sub").fetchall()}
     seen |= {r["team"] for r in db().execute("SELECT team FROM umeta").fetchall()}
-    users = sorted(VALID_USERS | {s for s in seen if s},
+    users = sorted((VALID_USERS | {s for s in seen if s}) - {INSTRUCTOR_TEAM},
                    key=lambda u: (int(re.findall(r"\d+", u)[0]) if re.findall(r"\d+", u) else 999, u))
     out = [{"team": u, "unlocked": unlocked_stage(u), "override": get_override(u),
             "score": team_score(u),
