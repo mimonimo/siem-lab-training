@@ -236,6 +236,21 @@
   .qna-compose textarea{width:100%;padding:10px 12px;border:1.5px solid var(--bd2);border-radius:10px;font-size:13px;
     font-family:inherit;background:var(--panel2);outline:none;resize:vertical;min-height:66px;color:var(--ink)}
   .qna-compose textarea:focus{border-color:var(--pri);background:#fff;box-shadow:var(--ring)}
+  .qna-row{display:flex;align-items:center;gap:10px}
+  .qna-row input{width:160px;padding:8px 11px;border:1.5px solid var(--bd2);border-radius:9px;font-size:12.5px;outline:none;background:var(--panel2)}
+  .qna-row input:focus{border-color:var(--pri);background:#fff;box-shadow:var(--ring)}
+  .qna-reply-lbl{font-size:12px;color:var(--pri-d);font-weight:650}
+  .qcancel{color:var(--rose);cursor:pointer;margin-left:6px;font-weight:600}
+  .qna-empty{color:var(--ink3);font-size:13px;text-align:center;padding:24px 0;line-height:1.7}
+  .qthread{position:relative;background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:12px 13px 10px;box-shadow:var(--sh-sm)}
+  .qthread .qpost{border:0;background:transparent;padding:2px 0 8px}
+  .qthread .qpost.reply{margin-left:14px;padding-left:12px;border-left:2px solid var(--emer-bd);background:transparent}
+  .qstat{float:right;font-size:10.5px;font-weight:750;padding:2px 9px;border-radius:20px}
+  .qstat.wait{background:var(--amber-wash);color:var(--amber);border:1px solid var(--amber-bd)}
+  .qstat.done{background:var(--emer-wash);color:var(--emer);border:1px solid var(--emer-bd)}
+  .rl.qn{background:var(--panel3);color:var(--ink2)}
+  .qreply{border:1px solid var(--bd);background:var(--panel2);color:var(--pri);border-radius:8px;padding:4px 11px;font-size:11.5px;font-weight:700;cursor:pointer;margin-top:2px}
+  .qreply:hover{background:var(--pri-wash);border-color:var(--pri-bd)}
   .hidden{display:none!important}
   @media(max-width:720px){.tiles{grid-template-columns:1fr 1fr}}
 </style>
@@ -278,6 +293,8 @@
     <p style="font-size:12px;color:var(--ink3);margin:-6px 0 12px">궁금한 점을 남기면 강사와 다른 학생이 함께 볼 수 있습니다.</p>
     <div class="qna-list" id="qnaList"></div>
     <div class="qna-compose">
+      <div class="qna-row"><input id="qnaQno" type="number" min="1" placeholder="관련 문항 번호 (선택)">
+        <span id="qnaReplyLbl" class="qna-reply-lbl"></span></div>
       <textarea id="qnaText" placeholder="궁금한 점을 남겨 주세요. (예: Q3에서 웹셸 파일을 어디서 찾나요?)"></textarea>
       <button class="go" id="qnaSend" style="padding:11px">문의 등록</button>
     </div>
@@ -439,21 +456,30 @@ function closeQna(){$('#qnaDrawer').classList.remove('on');if(qnaTimer){clearInt
 function fmtTime(t){const d=new Date(t*1000);const p=n=>('0'+n).slice(-2);return p(d.getHours())+':'+p(d.getMinutes());}
 async function loadQna(){
   const d=await jget('/api/qna');
-  if(d.error){$('#qnaList').innerHTML=`<p style="color:var(--ink3);font-size:13px">${esc(d.error)}</p>`;return;}
+  if(d.error){$('#qnaList').innerHTML=`<p class="qna-empty">${esc(d.error)}</p>`;return;}
   const posts=d.posts||[], tops=posts.filter(p=>!p.parent), reps=posts.filter(p=>p.parent);
   const one=(p,isr)=>`<div class="qpost ${isr?'reply':''}"><div class="ph">
       <span class="who">${esc(p.author)}</span>
       <span class="rl ${p.role==='instructor'?'instr':''}">${p.role==='instructor'?'강사':'학생'}</span>
-      ${p.qno?`<span class="rl">Q${p.qno}</span>`:''}<span class="tm">${fmtTime(p.ts)}</span></div>
-      <div class="bd">${esc(p.body)}</div>${(!isr&&d.is_instr)?`<span class="rbtn" onclick="qnaReply(${p.id})">답변 달기</span>`:''}</div>`;
-  $('#qnaList').innerHTML=tops.length
-    ? tops.map(p=>one(p,false)+reps.filter(r=>r.parent===p.id).map(r=>one(r,true)).join('')).join('')
-    : '<p style="color:var(--ink3);font-size:13px">아직 등록된 문의가 없습니다. 첫 질문을 남겨 보세요.</p>';
+      ${p.qno?`<span class="rl qn">Q${p.qno}</span>`:''}<span class="tm">${fmtTime(p.ts)}</span></div>
+      <div class="bd">${esc(p.body)}</div></div>`;
+  if(!tops.length){$('#qnaList').innerHTML='<p class="qna-empty">아직 등록된 문의가 없습니다.<br>궁금한 점을 남겨 보세요 🙂</p>';return;}
+  $('#qnaList').innerHTML=tops.map(p=>{
+    const rs=reps.filter(r=>r.parent===p.id);
+    const answered=rs.some(r=>r.role==='instructor');
+    const st=answered?'<span class="qstat done">✓ 답변완료</span>':'<span class="qstat wait">답변대기</span>';
+    return `<div class="qthread">${st}${one(p,false)}${rs.map(r=>one(r,true)).join('')}
+      <button class="qreply" onclick="qnaReply(${p.id},'${esc(p.author)}')">↳ 답글</button></div>`;
+  }).join('');
 }
-window.qnaReply=(id)=>{qnaReplyTo=id;const t=$('#qnaText');t.placeholder='↳ 위 질문에 대한 답변을 작성합니다.';t.focus();};
+window.qnaReply=(id,who)=>{qnaReplyTo=id;const t=$('#qnaText');
+  $('#qnaReplyLbl').innerHTML=`↳ <b>${esc(who||'')}</b> 님 글에 답글 <span class="qcancel" onclick="qnaCancelReply()">취소</span>`;
+  t.focus();t.scrollIntoView({block:'nearest'});};
+window.qnaCancelReply=()=>{qnaReplyTo=0;$('#qnaReplyLbl').innerHTML='';};
 async function sendQna(){const t=$('#qnaText');const v=(t.value||'').trim();if(!v)return;
-  const r=await jpost('/api/qna',{body:v,parent:qnaReplyTo});if(r&&r.error){alert(r.error);return;}
-  t.value='';qnaReplyTo=0;t.placeholder='궁금한 점을 남겨 주세요.';loadQna();}
+  const qno=parseInt($('#qnaQno').value,10)||0;
+  const r=await jpost('/api/qna',{body:v,parent:qnaReplyTo,qno:qno});if(r&&r.error){alert(r.error);return;}
+  t.value='';$('#qnaQno').value='';qnaReplyTo=0;$('#qnaReplyLbl').innerHTML='';loadQna();}
 function renderStages(stages){
   if(!stages){$('#stagesStrip').innerHTML='';return;}
   $('#stagesStrip').innerHTML=stages.map(s=>{

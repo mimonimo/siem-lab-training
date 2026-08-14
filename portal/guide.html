@@ -20,14 +20,14 @@
   a{color:var(--pri);text-decoration:none}
   /* header */
   .hdr{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.85);backdrop-filter:saturate(180%) blur(10px);border-bottom:1px solid var(--bd);box-shadow:0 6px 20px -12px rgba(15,23,42,.18)}
-  .hdr-in{max-width:920px;margin:0 auto;padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between}
+  .hdr-in{max-width:1080px;margin:0 auto;padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between}
   .brand{display:flex;align-items:center;gap:10px;font-weight:750;font-size:15px;letter-spacing:-.3px}
   .brand .mk{width:28px;height:28px;border-radius:8px;background:linear-gradient(140deg,#3457e6,#0ea5a4);display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 4px 12px -2px rgba(52,87,230,.5)}
   .hdr-r{display:flex;gap:8px}
   .hbtn{border:1px solid var(--bd);background:var(--panel);color:var(--ink2);border-radius:9px;padding:7px 13px;font-size:12.5px;font-weight:650;cursor:pointer;transition:.16s;box-shadow:var(--sh);text-decoration:none;display:inline-flex;align-items:center;white-space:nowrap}
   .hbtn:hover{background:var(--panel2);transform:translateY(-1px)}
   .hbtn.pri{background:linear-gradient(180deg,#3f61ea,#3457e6);color:#fff;border-color:transparent}
-  .wrap{max-width:920px;margin:24px auto;padding:0 20px}
+  .wrap{max-width:1080px;margin:24px auto;padding:0 20px}
   /* toc */
   .lead{background:linear-gradient(120deg,#eef3ff,#f7fbff);border:1px solid var(--bd);border-radius:16px;padding:22px 24px;margin-bottom:18px;box-shadow:var(--sh)}
   .lead h1{margin:0 0 8px;font-size:23px;letter-spacing:-.5px}
@@ -53,7 +53,7 @@
   .note{background:var(--warn-wash);border:1px solid var(--warn-bd);border-radius:10px;padding:13px 15px;font-size:13.5px;color:#6b4e12;margin:12px 0}
   .tip{background:var(--pri-wash);border:1px solid var(--pri-bd);border-radius:10px;padding:13px 15px;font-size:13.5px;color:#243b7a;margin:12px 0}
   .diagram{width:100%;overflow-x:auto;background:var(--panel2);border:1px solid var(--bd);border-radius:12px;padding:14px;margin:10px 0}
-  .diagram svg{display:block}
+  .diagram svg{display:block;width:100%;height:auto;max-width:940px;margin:0 auto}
   ul,ol{margin:6px 0;padding-left:20px} li{margin:4px 0}
   .steps{counter-reset:s;list-style:none;padding:0;margin:10px 0}
   .steps li{counter-increment:s;position:relative;padding:9px 0 9px 38px;border-bottom:1px dashed var(--bd)}
@@ -67,12 +67,29 @@
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .kbd{font-family:var(--mono);background:#fff;border:1px solid var(--bd);border-radius:5px;padding:1px 6px;font-size:12px}
   @media(max-width:640px){.grid2{grid-template-columns:1fr}.sec{padding:18px}}
+  /* ---- 인쇄/PDF 저장 최적화 (브라우저 '대상: PDF로 저장') ---- */
+  @media print{
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    @page{margin:12mm}
+    body{background:#fff!important}
+    .hdr{position:static;box-shadow:none;border-bottom:1px solid #d5dbe6}
+    .hdr-r{display:none}
+    .wrap{max-width:none;margin:0;padding:0}
+    .toc{display:none}
+    .lead,.sec{box-shadow:none;break-inside:avoid}
+    .tablewrap{overflow:visible;break-inside:avoid;border:1px solid #d5dbe6}
+    table{min-width:0}
+    .diagram{overflow:visible}
+    .diagram svg{width:100%;height:auto}
+    .tip,.note,.anat,.steps li,tr,.q{break-inside:avoid}
+    a[href^="http"]::after{content:""}
+  }
 </style>
 </head>
 <body>
   <header class="hdr"><div class="hdr-in">
     <div class="brand"><span class="mk">📘</span>실습 교안 · 위협 탐지</div>
-    <div class="hdr-r"><a class="hbtn" href="/">← 미션 포털</a><button class="hbtn pri" onclick="window.open('https://'+location.hostname,'_blank')">Wazuh 열기 ↗</button></div>
+    <div class="hdr-r"><a class="hbtn" href="/">← 미션 포털</a><button class="hbtn" onclick="window.print()">📄 PDF 저장</button><button class="hbtn pri" onclick="window.open('https://'+location.hostname,'_blank')">Wazuh 열기 ↗</button></div>
   </div></header>
 
   <div class="wrap">

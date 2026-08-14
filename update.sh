@@ -30,10 +30,10 @@ sync_files(){
   say "저장소 파일 동기화 (scripts, portal, demo)"
   cp "$REPO"/scripts/*.py "$REPO"/scripts/*.sh "$LAB"/scripts/ 2>/dev/null || true
   cp "$REPO"/portal/portal_app.py "$REPO"/portal/*.html "$LAB"/portal/
-  cp "$REPO"/demo/* "$LAB"/ 2>/dev/null || true
+  mkdir -p "$LAB"/demo; cp "$REPO"/demo/* "$LAB"/demo/ 2>/dev/null || true
   cp "$REPO"/INSTRUCTOR_README.md "$LAB"/ 2>/dev/null || true
 }
-restart_portal(){ systemctl restart siem-portal; echo "   siem-portal 재시작"; }
+restart_portal(){ systemctl restart siem-portal siem-demo 2>/dev/null; echo "   siem-portal · siem-demo 재시작"; }
 
 do_bank(){ say "미션뱅크(문제·채점) 재생성";
   python3 "$LAB"/scripts/mission_bank_gen.py | tail -1
