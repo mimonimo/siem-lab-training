@@ -270,6 +270,8 @@ def api_submit():
 
 @app.route("/api/leaderboard")
 def api_leaderboard():
+    if not _auth_instr():                       # instructor-only (강사 콘솔 전용)
+        return jsonify(error="unauthorized"), 403
     rows = db().execute("""SELECT team, COALESCE(SUM(score),0) s,
                              SUM(status='correct') solved
                            FROM sub GROUP BY team ORDER BY s DESC, solved DESC LIMIT 40""").fetchall()

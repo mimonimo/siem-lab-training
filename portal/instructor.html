@@ -144,8 +144,8 @@ function renderSolutions(){
 async function renderSubs(){
   const {ok,d}=await jget('/api/instructor/submissions?key='+encodeURIComponent(KEY));
   if(!ok){$('#subView').innerHTML='<div class="card">권한 오류</div>';return;}
-  const lb=await jget('/api/leaderboard');
-  const chips=(lb.d.board||[]).map((r,i)=>`<span class="chip">${i+1}. <b>${esc(r.team)}</b> · ${r.score}점 · ${r.solved}✓</span>`).join('')||'<span class="chip">아직 제출 없음</span>';
+  const lb=await jget('/api/leaderboard?key='+encodeURIComponent(KEY));
+  const chips=((lb.d&&lb.d.board)||[]).map((r,i)=>`<span class="chip">${i+1}. <b>${esc(r.team)}</b> · ${r.score}점 · ${r.solved}✓</span>`).join('')||'<span class="chip">아직 제출 없음</span>';
   const rows=d.subs.map(s=>{
     const stc={correct:'st-correct',wrong:'st-wrong',manual:'st-manual',graded:'st-graded'}[s.status]||'';
     const act=s.manual&&s.status!=='graded'?`<input class="award" id="aw_${esc(s.team)}_${s.qno}" type="number" min="0" max="${s.max}" value="${s.max}"> <button class="btn sm" onclick="award('${esc(s.team)}',${s.qno})">채점</button>`:'';
@@ -168,7 +168,8 @@ async function renderUnlock(){
     <td>${u.stage_done.map((c,i)=>`${i+1}:${c}/${d.stage_totals[i]}`).join(' · ')}</td><td>${u.score}점</td>
     <td><select id="ov_${esc(u.team)}">${opts(u.override)}</select> <button class="btn sm" onclick="setUnlock('${esc(u.team)}')">적용</button></td></tr>`).join('');
   $('#unlockView').innerHTML=head+`<div class="card" style="padding:0;overflow-x:auto"><table>
-    <tr><th>학생</th><th>해금 상태</th><th>단계별 완료</th><th>점수</th><th>강제 해금(오버라이드)</th></tr>${rows}</table></div>`;
+    <tr><th>학생</th><th>해금 상태</th><th>단계별 완료</th><th>점수</th><th>강제 해금(오버라이드)</th></tr>${rows}</table></div>
+    <div style="margin-top:10px"><button class="btn sm" onclick="renderUnlock()">새로고침</button></div>`;
 }
 window.setUnlock=async(team)=>{const v=+document.getElementById('ov_'+team).value;await jpost('/api/instructor/unlock',{key:KEY,team,stage:v});renderUnlock();};
 </script>

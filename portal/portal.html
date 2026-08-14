@@ -234,7 +234,6 @@
     <div id="bonWrap"></div>
   </div>
 
-  <div class="drawer" id="drawer"><div class="panel"><h3>리더보드 <span class="x" id="lbX">×</span></h3><div id="lbList"></div></div></div>
 
 <script>
 const $=s=>document.querySelector(s);
@@ -262,8 +261,8 @@ function enterMission(){
   $('#hdrR').innerHTML=`<div class="chip"><span class="av">${esc(ini)}</span>${esc(CFG.team)}</div>
     <button class="hbtn pri" onclick="window.open('${wz}','_blank')">Wazuh 대시보드 ↗</button>
     <button class="hbtn" onclick="window.open('/guide','_blank')">📘 교안</button>
-    <button class="hbtn" id="lbBtn">리더보드</button><button class="hbtn" id="logoutBtn">로그아웃</button>`;
-  $('#lbBtn').onclick=openLB; $('#logoutBtn').onclick=async()=>{await jpost('/api/logout');location.reload();};
+    <button class="hbtn" id="logoutBtn">로그아웃</button>`;
+  $('#logoutBtn').onclick=async()=>{await jpost('/api/logout');location.reload();};
   const dt=CFG.dataset_time||''; const wu=CFG.wazuh_user||'admin', wpw=CFG.wazuh_pass||'';
   const cred = wpw ? `<span class="wzcred">🔑 Wazuh 로그인 · <b>${esc(wu)}</b> / <code>${esc(wpw)}</code>
     <button class="copybtn" id="wzCopy">복사</button></span>` : '';
@@ -363,13 +362,6 @@ function wireCard(qno){
   if(hb) hb.onclick=async()=>{hb.disabled=true;await jpost('/api/hint',{qno});await refreshCard(qno);};
   if(fld&&fld.tagName==='INPUT'&&sb) fld.addEventListener('keydown',e=>{if(e.key==='Enter')sb.click();});
 }
-async function openLB(){
-  const d=await jget('/api/leaderboard');
-  $('#lbList').innerHTML=(d.board||[]).map((r,i)=>`<div class="lbrow"><div class="rk">${i+1}</div><div class="nm">${esc(r.team)}</div><div class="pt">${r.score}점 · ${r.solved}✓</div></div>`).join('')||'<p style="color:#94a3b8;font-size:13px">아직 제출이 없습니다.</p>';
-  $('#drawer').classList.add('on');
-}
-$('#lbX').onclick=()=>$('#drawer').classList.remove('on');
-$('#drawer').onclick=e=>{if(e.target.id==='drawer')$('#drawer').classList.remove('on');};
 boot();
 </script>
 </body>
