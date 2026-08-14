@@ -86,6 +86,15 @@
     .sidenav a{display:block;font-size:12.8px;font-weight:600;color:var(--ink2);padding:6px 10px;border-radius:7px;cursor:pointer;line-height:1.35;text-decoration:none}
     .sidenav a:hover{background:var(--panel2);color:var(--pri)}
     .sidenav a.on{background:var(--pri-wash);color:var(--pri-d);font-weight:750}
+    .sidenav a{position:relative}
+    .sidenav a .rk{position:absolute;right:9px;top:50%;transform:translateY(-50%);color:var(--emer);font-size:12px;font-weight:800;opacity:0;transition:opacity .15s}
+    .sidenav a.read .rk{opacity:1}
+    .sidenav .prog{margin:2px 8px 12px;padding:0 0 13px;border-bottom:1px solid var(--bd)}
+    .sidenav .prog .lb{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:750;color:var(--ink2);margin-bottom:6px}
+    .sidenav .prog .lb .rr{font-size:10px;font-weight:650;color:var(--ink3);cursor:pointer}
+    .sidenav .prog .lb .rr:hover{color:var(--pri)}
+    .sidenav .prog .bar{height:6px;background:var(--panel3);border-radius:6px;overflow:hidden}
+    .sidenav .prog .bar i{display:block;height:100%;width:0;background:var(--emer);transition:width .3s}
     .wrap{margin-left:238px;max-width:900px;padding:22px 30px 40px}
     .sec{display:none}
     .sec.active{display:block;animation:pgfade .22s ease}
@@ -100,7 +109,7 @@
   @media screen and (max-width:860px){
     .sidenav{position:static;width:auto;height:auto;border-right:0;border-bottom:1px solid var(--bd);
       display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:8px 12px}
-    .sidenav .sgrp{display:none}
+    .sidenav .sgrp,.sidenav .prog,.sidenav a .rk{display:none}
     .sidenav a{white-space:nowrap;flex:none}
     .wrap{margin-left:0;padding:18px 16px 36px}
   }
@@ -766,21 +775,33 @@ Aug 13 04:38:05 siem sshd[22004]: <span class="hl2">Failed password</span> for i
     if(num&&rest.indexOf(num)===0)rest=rest.slice(num.length).trim();
     return (num?num+'. ':'')+rest;}
   var cur=0;
+  var RKEY='guide_read_v1', READ={};
+  try{READ=JSON.parse(localStorage.getItem(RKEY)||'{}')||{};}catch(e){READ={};}
+  function saveRead(){try{localStorage.setItem(RKEY,JSON.stringify(READ));}catch(e){}}
+  window.guideResetRead=function(){READ={};saveRead();render();};
   function buildNav(){
-    var nav=document.getElementById('sidenav'), html='';
+    var nav=document.getElementById('sidenav');
+    var html='<div class="prog"><div class="lb"><span>학습 진행</span>'
+      +'<span><span id="rcount">0/'+order.length+'</span> · <span class="rr" onclick="guideResetRead()" title="읽음 표시 초기화">초기화</span></span></div>'
+      +'<div class="bar"><i id="rbar"></i></div></div>';
     PARTS.forEach(function(p){
       html+='<div class="sgrp">'+p.t+'</div>';
       p.ids.forEach(function(id){
         var idx=order.indexOf(id);
-        html+='<a data-idx="'+idx+'" onclick="guideGo('+idx+')">'+secTitle(id)+'</a>';
+        html+='<a data-idx="'+idx+'" data-id="'+id+'" onclick="guideGo('+idx+')">'+secTitle(id)+'<span class="rk">✓</span></a>';
       });
     });
     nav.innerHTML=html;
   }
   function render(){
     order.forEach(function(id,i){var s=document.getElementById(id); if(s)s.classList.toggle('active',i===cur);});
-    var links=document.querySelectorAll('#sidenav a');
-    links.forEach(function(a){a.classList.toggle('on',+a.getAttribute('data-idx')===cur);});
+    var links=document.querySelectorAll('#sidenav a'), rc=0;
+    links.forEach(function(a){
+      a.classList.toggle('on',+a.getAttribute('data-idx')===cur);
+      var rd=!!READ[a.getAttribute('data-id')]; a.classList.toggle('read',rd); if(rd)rc++;
+    });
+    var rcEl=document.getElementById('rcount'); if(rcEl)rcEl.textContent=rc+'/'+order.length;
+    var rbar=document.getElementById('rbar'); if(rbar)rbar.style.width=Math.round(rc/order.length*100)+'%';
     var pn=document.getElementById('pagenav');
     pn.innerHTML='<button class="pv" '+(cur===0?'disabled':'')+' onclick="guideGo('+(cur-1)+')">← 이전</button>'
       +'<span class="pgmid">'+(cur+1)+' / '+order.length+' · '+secTitle(order[cur])+'</span>'
@@ -790,7 +811,7 @@ Aug 13 04:38:05 siem sshd[22004]: <span class="hl2">Failed password</span> for i
   }
   window.guideGo=function(i){
     if(i<0||i>=order.length)return;
-    cur=i; render();
+    cur=i; READ[order[cur]]=1; saveRead(); render();
     try{history.replaceState(null,'','#'+order[cur]);}catch(e){location.hash=order[cur];}
     window.scrollTo({top:0,behavior:'smooth'});
   };
@@ -802,7 +823,7 @@ Aug 13 04:38:05 siem sshd[22004]: <span class="hl2">Failed password</span> for i
     if(e.key==='ArrowLeft')guideGo(cur-1); else if(e.key==='ArrowRight')guideGo(cur+1);
   });
   window.addEventListener('hashchange',function(){var i=fromHash(); if(i!==cur)guideGo(i);});
-  buildNav(); cur=fromHash(); render();
+  buildNav(); cur=fromHash(); READ[order[cur]]=1; saveRead(); render();
 })();
 </script>
 </body>
