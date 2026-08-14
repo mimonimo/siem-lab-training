@@ -60,6 +60,42 @@
   .st-correct{color:var(--emer);font-weight:700}.st-wrong{color:var(--rose)}.st-manual{color:var(--amber)}.st-graded{color:var(--pri);font-weight:700}
   .lb{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
   .lb .chip{background:var(--panel);border:1px solid var(--bd);border-radius:20px;padding:6px 13px;font-size:13px;font-weight:600;box-shadow:var(--sh-sm)}
+  /* 학생 현황 카드 */
+  .ugrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:10px}
+  .ucard{background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:12px 13px;box-shadow:var(--sh-sm)}
+  .ucard .uh{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .ucard .uh b{font-size:14px}
+  .ucard .uh .usc{font-size:12px;font-weight:750;color:var(--pri-d);background:var(--pri-wash);border:1px solid var(--pri-bd);border-radius:20px;padding:2px 9px}
+  .ucard .ubar{height:9px;background:var(--panel3);border-radius:6px;overflow:hidden;margin-bottom:7px}
+  .ucard .ubar i{display:block;height:100%;background:var(--emer);border-radius:6px;transition:width .3s}
+  .ucard .ubar i.z{background:var(--bd2)}
+  .ucard .umeta{font-size:12px;color:var(--ink2);margin-bottom:9px;line-height:1.5}
+  .ucard .umeta b{color:var(--ink)}
+  .ucard .ovbadge{font-size:9.5px;font-weight:750;color:var(--amber);background:var(--amber-wash);border:1px solid var(--amber-bd);border-radius:20px;padding:1px 6px;margin-left:3px}
+  .ucard .uact{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+  .ucard .uact select{flex:1;min-width:78px;padding:5px 6px;font-size:11.5px}
+  .stat-row{display:flex;gap:14px;flex-wrap:wrap;margin:8px 0 4px}
+  .stat-row .st{flex:1;min-width:92px} .stat-row .st .v{font-size:22px;font-weight:800;letter-spacing:-.5px;color:var(--ink)}
+  .stat-row .st .l{font-size:11.5px;color:var(--ink3);font-weight:600}
+  .prow{display:flex;align-items:center;gap:8px;padding:7px 2px;border-bottom:1px dashed var(--bd);font-size:12.5px;flex-wrap:wrap}
+  .prow:last-child{border-bottom:0} .prow .pans{flex:1;min-width:140px;color:var(--ink2);background:var(--panel2);border:1px solid var(--bd);border-radius:6px;padding:3px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .missrow{display:flex;align-items:center;gap:9px;padding:5px 4px;border-bottom:1px dashed var(--bd);cursor:pointer;border-radius:6px}
+  .missrow:hover{background:var(--panel2)}
+  /* 문의 채팅 */
+  .chatlog{max-height:min(58vh,520px);overflow-y:auto;padding:14px 15px;display:flex;flex-direction:column;gap:9px;background:var(--panel2)}
+  .chatmsg{max-width:86%;align-self:flex-start;background:#fff;border:1px solid var(--bd);border-radius:12px;border-top-left-radius:4px;padding:8px 12px;box-shadow:var(--sh-sm)}
+  .chatmsg.me{align-self:flex-end;background:var(--pri-wash);border-color:var(--pri-bd);border-radius:12px;border-top-right-radius:4px}
+  .chatmsg .cmh{display:flex;align-items:center;gap:7px;font-size:11.5px;margin-bottom:3px}
+  .chatmsg .cmh .who{font-weight:750;color:var(--ink)}
+  .chatmsg .cmh .rl{font-size:9.5px;font-weight:750;padding:1px 7px;border-radius:20px;background:var(--panel3);color:var(--ink2)}
+  .chatmsg .cmh .rl.instr{background:var(--emer-wash);color:var(--emer);border:1px solid var(--emer-bd)}
+  .chatmsg .cmh .tm{color:var(--ink3);font-weight:500;margin-left:auto}
+  .chatmsg .cmh .del{color:var(--ink3);font-size:10.5px;cursor:pointer;font-weight:600}
+  .chatmsg .cmh .del:hover{color:var(--rose)}
+  .chatmsg .cmb{font-size:13px;color:var(--ink);line-height:1.55;white-space:pre-wrap;word-break:break-word}
+  .chatbar{display:flex;gap:8px;align-items:flex-end;padding:11px 13px;border-top:1px solid var(--bd);background:var(--panel)}
+  .chatbar textarea{flex:1;border:1.5px solid var(--bd2);border-radius:10px;padding:9px 12px;font-size:13px;font-family:inherit;background:var(--panel2);outline:none;resize:none;min-height:40px;max-height:120px}
+  .chatbar textarea:focus{border-color:var(--pri);background:#fff;box-shadow:var(--ring)}
   .hidden{display:none} input.award{width:58px;padding:5px 8px;border:1.5px solid var(--bd2);border-radius:7px;font-family:var(--mono)}
   select{padding:6px 9px;border:1.5px solid var(--bd2);border-radius:8px;font-size:13px;background:#fff}
   .hint-note{background:var(--pri-wash);border:1px solid var(--pri-bd);color:var(--ink2);font-size:12.5px}
@@ -113,14 +149,12 @@
     <div id="ictx" class="ictx"></div>
     <div class="tabs">
       <button id="tabSol" class="on">문제 풀이 해설</button>
-      <button id="tabSub">제출 현황 · 채점</button>
-      <button id="tabUnl">사용자 · 해금</button>
-      <button id="tabQna">문의 게시판 <span id="qnaDot" class="dot hidden"></span></button>
+      <button id="tabSub">학생 현황 · 해금</button>
+      <button id="tabQna">문의 채팅 <span id="qnaDot" class="dot hidden"></span></button>
       <button id="tabSys">시스템 정보</button>
     </div>
     <div id="solView"></div>
     <div id="subView" class="hidden"></div>
-    <div id="unlockView" class="hidden"></div>
     <div id="qnaView" class="hidden"></div>
     <div id="sysView" class="hidden"></div>
   </div>
@@ -162,14 +196,14 @@ async function boot(){   // session-based auth (portal login as admin/p@ssw0rd)
 }
 boot();
 let curTab='sol';
-['Sol','Sub','Unl','Qna','Sys'].forEach(x=>$('#tab'+x).onclick=()=>switchTab(x.toLowerCase()));
+['Sol','Sub','Qna','Sys'].forEach(x=>$('#tab'+x).onclick=()=>switchTab(x.toLowerCase()));
 function switchTab(t){
   curTab=t;
-  const tm={sol:'#tabSol',sub:'#tabSub',unl:'#tabUnl',qna:'#tabQna',sys:'#tabSys'};
-  const vm={sol:'#solView',sub:'#subView',unl:'#unlockView',qna:'#qnaView',sys:'#sysView'};
+  const tm={sol:'#tabSol',sub:'#tabSub',qna:'#tabQna',sys:'#tabSys'};
+  const vm={sol:'#solView',sub:'#subView',qna:'#qnaView',sys:'#sysView'};
   Object.entries(tm).forEach(([k,s])=>$(s).classList.toggle('on',k===t));
   Object.entries(vm).forEach(([k,s])=>$(s).classList.toggle('hidden',k!==t));
-  if(t==='sub')renderSubs(); if(t==='unl')renderUnlock(); if(t==='qna')renderQna(); if(t==='sys')renderSys();
+  if(t==='sub')renderStudents(); if(t==='qna')renderQna(); if(t==='sys')renderSys();
 }
 /* clipboard that also works over plain HTTP */
 function copyText(t){ if(navigator.clipboard&&window.isSecureContext){return navigator.clipboard.writeText(t).catch(()=>fbCopy(t));} return fbCopy(t); }
@@ -181,10 +215,11 @@ setInterval(async()=>{
   if(document.hidden||$('#app').classList.contains('hidden'))return;
   const ae=document.activeElement, editing=ae&&['INPUT','TEXTAREA','SELECT'].includes(ae.tagName);
   try{const {d}=await jget('/api/qna?key='+encodeURIComponent(KEY));
-    if(d&&d.posts){const open=d.posts.filter(p=>!p.parent).some(p=>!d.posts.some(r=>r.parent===p.id));
-      $('#qnaDot').classList.toggle('hidden',!open);}}catch(e){}
+    if(d&&d.posts&&d.posts.length){const arr=d.posts.slice().sort((a,b)=>a.ts-b.ts||a.id-b.id);
+      const last=arr[arr.length-1];
+      $('#qnaDot').classList.toggle('hidden', !(last&&last.role!=='instructor'));}}catch(e){}
   if(editing)return;
-  if(curTab==='sub')renderSubs(); else if(curTab==='unl')renderUnlock(); else if(curTab==='qna')renderQna();
+  if(curTab==='sub')renderStudents(); else if(curTab==='qna')renderQna();
 },7000);
 function renderSolutions(){
   const sc=SOL.scoring;
@@ -203,58 +238,59 @@ function renderSolutions(){
   }).join('');
   $('#solView').innerHTML=head+cards;
 }
-async function renderSubs(){
-  const {ok,d}=await jget('/api/instructor/submissions?key='+encodeURIComponent(KEY));
-  if(!ok){$('#subView').innerHTML='<div class="card">권한 오류</div>';return;}
-  const lb=await jget('/api/leaderboard?key='+encodeURIComponent(KEY));
-  const chips=((lb.d&&lb.d.board)||[]).map((r,i)=>`<span class="chip">${i+1}. <b>${esc(r.team)}</b> · ${r.score}점 · ${r.solved}</span>`).join('')||'<span class="chip">아직 제출 없음</span>';
-  const rows=d.subs.map(s=>{
-    const stc={correct:'st-correct',wrong:'st-wrong',manual:'st-manual',graded:'st-graded'}[s.status]||'';
-    const act=s.manual&&s.status!=='graded'?`<input class="award" id="aw_${esc(s.team)}_${s.qno}" type="number" min="0" max="${s.max}" value="${s.max}"> <button class="btn sm" onclick="award('${esc(s.team)}',${s.qno})">채점</button>`:'';
-    return `<tr><td><b>${esc(s.team)}</b></td><td>${s.qno}</td><td class="${stc}">${s.status}</td><td>${s.score}/${s.max}</td><td>힌트${s.hints_used}·오답${s.wrong_count}</td><td style="max-width:260px">${esc(s.answer)}</td><td>${act}</td></tr>`;
-  }).join('');
-  $('#subView').innerHTML=cohortSummary(d.subs,(lb.d&&lb.d.board)||[])+
-    `<div class="lb">${chips}</div><div class="card" style="padding:0;overflow-x:auto"><table>
-    <tr><th>학생</th><th>문항</th><th>상태</th><th>점수</th><th>기록</th><th>답안</th><th>수동채점</th></tr>
-    ${rows||'<tr><td colspan=7 style="text-align:center;color:#94a3b8;padding:20px">제출 없음</td></tr>'}</table></div>
-    <div style="margin-top:10px"><button class="btn sm" onclick="renderSubs()">새로고침</button></div>`;
-}
-/* 코호트 현황 요약 — 기존 제출 데이터로 클라이언트에서 집계(백엔드 무변경) */
-function cohortSummary(subs, board){
-  const teams=[...new Set(subs.map(s=>s.team))];
-  const solved=s=> s.status==='correct' || (s.status==='graded' && (+s.score)>0);
-  const pending=subs.filter(s=>s.manual && s.status==='manual').length;
-  const scores=board.map(r=>+r.score);
+async function renderStudents(){
+  const [sub,usr]=await Promise.all([
+    jget('/api/instructor/submissions?key='+encodeURIComponent(KEY)),
+    jget('/api/instructor/users?key='+encodeURIComponent(KEY))
+  ]);
+  if(!sub.ok||!usr.ok){$('#subView').innerHTML='<div class="card">권한 오류</div>';return;}
+  const subs=sub.d.subs||[], U=usr.d, ns=U.num_stages, users=U.users||[];
+  const TOTAL=(SOL.questions||[]).length;
+  const solvedOf=s=> s.status==='correct'||(s.status==='graded'&&(+s.score)>0);
+  const solvedBy={}; subs.forEach(s=>{ if(solvedOf(s)) solvedBy[s.team]=(solvedBy[s.team]||0)+1; });
+  const scores=users.map(u=>u.score);
   const avg=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):0;
-  const max=scores.length?Math.max(...scores):0;
-  const totalStudents=(SOL&&SOL.questions)?undefined:undefined;
-  // 문항별 정답률
-  const perQ={};
-  subs.forEach(s=>{const q=perQ[s.qno]||(perQ[s.qno]={att:0,ok:0});q.att++;if(solved(s))q.ok++;});
+  const maxs=scores.length?Math.max(...scores):0;
+  const active=users.filter(u=>(solvedBy[u.team]||0)>0||u.score>0).length;
+  const pending=subs.filter(s=>s.manual&&s.status==='manual');
+  const perQ={}; subs.forEach(s=>{const q=perQ[s.qno]||(perQ[s.qno]={att:0,ok:0});q.att++;if(solvedOf(s))q.ok++;});
   const qtitle=n=>{const q=(SOL.questions||[]).find(x=>x.qno===n);return q?q.question:('Q'+n);};
   const missed=Object.entries(perQ).map(([qno,v])=>({qno:+qno,att:v.att,ok:v.ok,rate:v.att?v.ok/v.att:0}))
-     .filter(x=>x.att>0).sort((a,b)=>a.rate-b.rate || b.att-a.att).slice(0,6);
-  const stat=(label,val,sub)=>`<div style="flex:1;min-width:96px"><div style="font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-.5px">${val}</div><div style="font-size:11.5px;color:var(--ink3);font-weight:600">${label}${sub?` <span style="color:var(--ink3)">${sub}</span>`:''}</div></div>`;
-  const bar=x=>{const pct=Math.round(x.rate*100);const col=pct<40?'var(--rose)':pct<70?'var(--amber)':'var(--emer)';
-    return `<div onclick="gotoSolution(${x.qno})" title="클릭하면 해당 문항 해설로 이동" style="display:flex;align-items:center;gap:9px;padding:5px 4px;border-bottom:1px dashed var(--bd);cursor:pointer;border-radius:6px" onmouseover="this.style.background='var(--panel2)'" onmouseout="this.style.background=''">
+     .filter(x=>x.att>0).sort((a,b)=>a.rate-b.rate||b.att-a.att).slice(0,6);
+  const missBar=x=>{const pct=Math.round(x.rate*100);const col=pct<40?'var(--rose)':pct<70?'var(--amber)':'var(--emer)';
+    return `<div class="missrow" onclick="gotoSolution(${x.qno})" title="클릭: 해당 문항 해설로">
       <span class="qno" style="width:24px;height:24px;font-size:12px">${x.qno}</span>
       <span style="flex:1;min-width:0;font-size:12.5px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(qtitle(x.qno))}</span>
-      <span style="width:120px;height:8px;background:var(--panel3);border-radius:6px;overflow:hidden;flex:none"><span style="display:block;height:100%;width:${pct}%;background:${col}"></span></span>
-      <span style="width:74px;text-align:right;font-size:11.5px;color:var(--ink3);flex:none">정답 ${x.ok}/${x.att} (${pct}%)</span></div>`;};
-  if(!subs.length) return `<div class="card hint-note">아직 제출이 없습니다. 학생들이 답안을 제출하면 이곳에 참여율·평균·문항별 정답률이 집계됩니다.</div>`;
-  return `<div class="card">
-    <div style="display:flex;align-items:center;gap:10px"><div class="qtext" style="flex:1">현황 요약</div>
-      <button class="btn sm" onclick="exportCSV()">성적 CSV 내보내기</button></div>
-    <div style="display:flex;gap:14px;flex-wrap:wrap;margin:8px 0 6px">
-      ${stat('참여 학생',teams.length+'명')}
-      ${stat('평균 점수',avg+'점')}
-      ${stat('최고 점수',max+'점')}
-      ${stat('총 제출',subs.length+'건')}
-      ${stat('채점 대기',pending+'건','(서술형)')}
-    </div>
-    <div style="font-size:12.5px;font-weight:750;color:var(--ink2);margin:10px 0 2px">가장 많이 틀린 문항 <span style="color:var(--ink3);font-weight:500">— 강의 때 짚어주기 좋은 순서</span></div>
-    ${missed.map(bar).join('')||'<div style="font-size:12.5px;color:var(--ink3);padding:6px 0">집계할 데이터가 아직 적습니다.</div>'}
-  </div>`;
+      <span style="width:110px;height:8px;background:var(--panel3);border-radius:6px;overflow:hidden;flex:none"><span style="display:block;height:100%;width:${pct}%;background:${col}"></span></span>
+      <span style="width:78px;text-align:right;font-size:11.5px;color:var(--ink3);flex:none">정답 ${x.ok}/${x.att} (${pct}%)</span></div>`;};
+  const stt=(v,l)=>`<div class="st"><div class="v">${v}</div><div class="l">${l}</div></div>`;
+  const opts=(sel)=>{let o=`<option value="0"${sel===0?' selected':''}>자동 해금</option>`;for(let s=1;s<=ns;s++)o+=`<option value="${s}"${sel===s?' selected':''}>${s}단계까지</option>`;return o;};
+  const ucard=u=>{const sv=solvedBy[u.team]||0, pct=TOTAL?Math.round(sv/TOTAL*100):0;
+    return `<div class="ucard"><div class="uh"><b>${esc(u.team)}</b><span class="usc">${u.score}점</span></div>
+      <div class="ubar"><i class="${sv?'':'z'}" style="width:${sv?pct:100}%"></i></div>
+      <div class="umeta">푼 문항 <b>${sv}/${TOTAL}</b> · 해금 <b>${u.unlocked}/${ns}단계</b>${u.override?'<span class="ovbadge">강제</span>':''}</div>
+      <div class="uact"><select id="ov_${esc(u.team)}">${opts(u.override)}</select>
+        <button class="btn sm" onclick="setUnlock('${esc(u.team)}')">적용</button>
+        <button class="btn sm" style="color:var(--rose)" onclick="resetUser('${esc(u.team)}')">초기화</button></div></div>`;};
+  const stats=`<div class="card"><div style="display:flex;align-items:center;gap:10px"><div class="qtext" style="flex:1">학생 현황</div>
+      <button class="btn sm" onclick="exportCSV()">성적 CSV</button></div>
+    <div class="stat-row">${stt(active+'/'+users.length,'참여 학생')}${stt(avg+'점','평균 점수')}${stt(maxs+'점','최고 점수')}${stt(pending.length+'건','채점 대기(서술형)')}</div></div>`;
+  const actions=`<div class="card" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <span style="font-size:12.5px;font-weight:700;color:var(--ink2)">해금 일괄</span>
+    <button class="btn sm" onclick="unlockAll(0)">전체 자동해금(기본)</button>
+    <button class="btn sm" onclick="unlockAll(${ns})">전체 모두 열기</button>
+    <span style="flex:1"></span>
+    <button class="btn sm" onclick="renderStudents()">새로고침</button>
+    <button class="btn sm" style="color:var(--rose);border-color:var(--amber-bd)" onclick="resetAll()">전체 초기화</button></div>`;
+  const pend=pending.length?`<div class="card"><div class="qtext">채점 대기 · 서술형 ${pending.length}건</div>
+    ${pending.map(s=>`<div class="prow"><b>${esc(s.team)}</b><span style="color:var(--ink3)">Q${s.qno}</span>
+      <span class="pans" title="${esc(s.answer||'')}">${esc((s.answer||'').replace(/\s+/g,' ').slice(0,140))||'(빈 답안)'}</span>
+      <input class="award" id="aw_${esc(s.team)}_${s.qno}" type="number" min="0" max="${s.max}" value="${s.max}">
+      <button class="btn sm" onclick="award('${esc(s.team)}',${s.qno})">채점</button></div>`).join('')}</div>`:'';
+  const miss=missed.length?`<div class="card"><div class="qtext">가장 많이 틀린 문항 <span style="font-size:11.5px;color:var(--ink3);font-weight:500">— 강의 때 짚어주기 좋은 순서 · 클릭 시 해설</span></div>${missed.map(missBar).join('')}</div>`:'';
+  const empty=subs.length?'':`<div class="card hint-note">아직 제출이 없습니다. 학생이 문제를 풀면 사용자별 진척과 정답률이 집계됩니다.</div>`;
+  const help=`<div class="card hint-note" style="font-size:12px">단계는 각 단계 <b>60% 완료 시 다음 단계 자동 해금</b>됩니다. 특정 학생을 미리 열어주려면 카드의 드롭다운으로 강제 해금하세요. 강의 흐름상 전부 열어두려면 위의 <b>전체 모두 열기</b>를 쓰세요.</div>`;
+  $('#subView').innerHTML=stats+empty+`<div class="qtext" style="margin:14px 2px 8px">사용자별 진척 · 해금</div><div class="ugrid">${users.map(ucard).join('')}</div>`+actions+help+pend+miss;
 }
 window.gotoSolution=(qno)=>{
   switchTab('sol');
@@ -276,65 +312,36 @@ window.exportCSV=async()=>{
   a.href=url; a.download='siem-lab-grades.csv'; document.body.appendChild(a); a.click();
   setTimeout(()=>{document.body.removeChild(a); URL.revokeObjectURL(url);},500);
 };
-window.award=async(team,qno)=>{const v=+document.getElementById(`aw_${team}_${qno}`).value;await jpost('/api/instructor/grade',{key:KEY,team,qno,award:v});renderSubs();};
-async function renderUnlock(){
-  const {ok,d}=await jget('/api/instructor/users?key='+encodeURIComponent(KEY));
-  if(!ok){$('#unlockView').innerHTML='<div class="card">권한 오류</div>';return;}
-  const ns=d.num_stages;
-  const opts=(sel)=>{let o=`<option value="0"${sel===0?' selected':''}>자동</option>`;for(let s=1;s<=ns;s++)o+=`<option value="${s}"${sel===s?' selected':''}>${s}단계까지</option>`;return o;};
-  const head=`<div class="card hint-note"><b>단계별 해금</b> · 각 단계 60% 완료 시 다음 단계 자동 해금. 강사가 사용자별로 강제 해금(오버라이드) 가능.<br>
-    <span style="color:var(--ink3);font-size:12px">${d.stage_names.map((n,i)=>`${n}(${d.stage_totals[i]}문항)`).join(' · ')}</span></div>`;
-  const rows=d.users.map(u=>`<tr><td><b>${esc(u.team)}</b></td><td>현재 <b style="color:var(--pri)">${u.unlocked}단계</b></td>
-    <td>${u.stage_done.map((c,i)=>`${i+1}:${c}/${d.stage_totals[i]}`).join(' · ')}</td><td>${u.score}점</td>
-    <td><select id="ov_${esc(u.team)}">${opts(u.override)}</select> <button class="btn sm" onclick="setUnlock('${esc(u.team)}')">적용</button></td>
-    <td><button class="btn sm" style="color:var(--rose)" onclick="resetUser('${esc(u.team)}')">초기화</button></td></tr>`).join('');
-  $('#unlockView').innerHTML=head+`<div class="card" style="padding:0;overflow-x:auto"><table>
-    <tr><th>학생</th><th>해금 상태</th><th>단계별 완료</th><th>점수</th><th>강제 해금(오버라이드)</th><th>진행 초기화</th></tr>${rows}</table></div>
-    <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
-      <button class="btn sm" onclick="renderUnlock()">새로고침</button>
-      <span style="flex:1"></span>
-      <button class="btn sm" style="color:var(--rose);border-color:var(--amber-bd)" onclick="resetAll()">전체 초기화(재사용 시)</button></div>`;
-}
+window.award=async(team,qno)=>{const v=+document.getElementById(`aw_${team}_${qno}`).value;await jpost('/api/instructor/grade',{key:KEY,team,qno,award:v});renderStudents();};
+window.setUnlock=async(team)=>{const v=+document.getElementById('ov_'+team).value;await jpost('/api/instructor/unlock',{key:KEY,team,stage:v});renderStudents();};
+window.unlockAll=async(stage)=>{ if(!confirm(stage? '모든 학생을 전체 단계까지 강제로 열까요?':'모든 학생을 자동 해금(기본)으로 되돌릴까요?'))return;
+  await jpost('/api/instructor/unlock',{key:KEY,team:'*',stage}); renderStudents(); };
 window.resetUser=async(team)=>{ if(!confirm(team+' 학생의 제출·점수·힌트·해금을 모두 초기화할까요? (되돌릴 수 없습니다)'))return;
-  await jpost('/api/instructor/reset',{key:KEY,team}); renderUnlock(); };
-window.resetAll=async()=>{ if(!confirm('모든 학생의 진행 상황을 초기화합니다. 다음 기수/재실습을 위해서만 사용하세요. 계속할까요?'))return;
+  await jpost('/api/instructor/reset',{key:KEY,team}); renderStudents(); };
+window.resetAll=async()=>{ if(!confirm('모든 학생의 진행 상황을 초기화합니다. 다음 기수/재실습용입니다. 계속할까요?'))return;
   if(!confirm('정말 전체 초기화할까요? 모든 제출·점수가 삭제됩니다.'))return;
-  const {d}=await jpost('/api/instructor/reset',{key:KEY,team:'*'}); alert('초기화 완료'+(d&&d.cleared!=null?` (${d.cleared}명)`:'')); renderUnlock(); };
-window.setUnlock=async(team)=>{const v=+document.getElementById('ov_'+team).value;await jpost('/api/instructor/unlock',{key:KEY,team,stage:v});renderUnlock();};
+  const {d}=await jpost('/api/instructor/reset',{key:KEY,team:'*'}); alert('초기화 완료'+(d&&d.cleared!=null?` (${d.cleared}명)`:'')); renderStudents(); };
 
-/* ---- 문의 게시판 (강사: 답변/공지/삭제) ---- */
-let iReplyTo=0;
+/* ---- 문의 채팅 (강사) : 20명 오픈 채팅 · 문항 태그 없음 ---- */
 function fmtT(t){const x=new Date(t*1000);const p=n=>('0'+n).slice(-2);return p(x.getMonth()+1)+'/'+p(x.getDate())+' '+p(x.getHours())+':'+p(x.getMinutes());}
 async function renderQna(){
   const {d}=await jget('/api/qna?key='+encodeURIComponent(KEY));
-  const posts=(d&&d.posts)||[], tops=posts.filter(p=>!p.parent), reps=posts.filter(p=>p.parent);
-  const one=(p,isr)=>`<div class="qpost ${isr?'reply':''}"><div class="ph">
-      <span class="who">${esc(p.author)}</span><span class="rl ${p.role==='instructor'?'instr':''}">${p.role==='instructor'?'강사':'학생'}</span>
-      ${p.qno?`<span class="rl">Q${p.qno}</span>`:''}<span class="tm">${fmtT(p.ts)}</span>
-      <span class="del" onclick="qnaDel(${p.id})">삭제</span></div>
-      <div class="bd">${esc(p.body)}</div>
-      ${!isr?`<button class="btn sm" style="margin-top:7px" onclick="iReply(${p.id})">답변 달기</button>`:''}</div>`;
-  const isAns=p=>reps.some(r=>r.parent===p.id&&r.role==='instructor');
-  tops.sort((a,b)=>(isAns(a)-isAns(b))||(b.id-a.id));   // 미답변 먼저
-  const body=tops.length
-    ? tops.map(p=>{
-        const rs=reps.filter(r=>r.parent===p.id);
-        const st=isAns(p)?'<span class="qstat done">답변완료</span>':'<span class="qstat wait">답변대기</span>';
-        return `<div class="qthread">${st}${one(p,false)}${rs.map(r=>one(r,true)).join('')}</div>`;
-      }).join('')
-    : '<p style="color:var(--ink3);font-size:13px;padding:12px">아직 등록된 문의가 없습니다.</p>';
-  $('#qnaView').innerHTML=`<div class="card"><div class="qna-list">${body}</div>
-    <div class="qna-compose"><textarea id="iQnaText" placeholder="답변 또는 전체 공지를 작성하세요."></textarea>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn pri sm" onclick="iSend()">등록</button>
-        <button class="btn sm" onclick="iClearReply()">답변대상 해제</button>
-        <span id="iReplyLbl" style="font-size:12px;color:var(--pri);font-weight:700"></span></div></div></div>`;
-  if(iReplyTo){const l=$('#iReplyLbl'); if(l) l.textContent='↳ Q#'+iReplyTo+' 에 답변';}
+  const posts=((d&&d.posts)||[]).slice().sort((a,b)=>a.ts-b.ts||a.id-b.id);
+  const bub=p=>{const instr=p.role==='instructor';
+    return `<div class="chatmsg ${instr?'me':''}"><div class="cmh"><span class="who">${esc(p.author)}</span>`
+      +`<span class="rl ${instr?'instr':''}">${instr?'강사':'학생'}</span><span class="tm">${fmtT(p.ts)}</span>`
+      +`<span class="del" onclick="qnaDel(${p.id})">삭제</span></div><div class="cmb">${esc(p.body)}</div></div>`;};
+  const body=posts.length?posts.map(bub).join('')
+    :'<div style="color:var(--ink3);font-size:13px;padding:20px;text-align:center">아직 메시지가 없습니다.<br>학생들의 질문이 여기에 실시간으로 표시됩니다.</div>';
+  $('#qnaView').innerHTML=`<div class="card" style="padding:0;overflow:hidden">
+    <div class="chatlog" id="chatLog">${body}</div>
+    <div class="chatbar"><textarea id="iQnaText" placeholder="메시지를 입력하세요 · 전체 학생에게 공지·답변됩니다 (Enter 전송 · Shift+Enter 줄바꿈)"></textarea>
+      <button class="btn pri" onclick="iSend()">전송</button></div></div>`;
+  const log=$('#chatLog'); if(log)log.scrollTop=log.scrollHeight;
+  const ta=$('#iQnaText'); if(ta)ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();iSend();}});
 }
-window.iReply=(id)=>{iReplyTo=id;const t=$('#iQnaText');if(t)t.focus();const l=$('#iReplyLbl');if(l)l.textContent='↳ Q#'+id+' 에 답변';};
-window.iClearReply=()=>{iReplyTo=0;const l=$('#iReplyLbl');if(l)l.textContent='';};
-window.iSend=async()=>{const t=$('#iQnaText');const v=(t.value||'').trim();if(!v)return;await jpost('/api/qna',{key:KEY,body:v,parent:iReplyTo});t.value='';iReplyTo=0;renderQna();};
-window.qnaDel=async(id)=>{if(!confirm('이 글을 삭제할까요?'))return;await jpost('/api/qna/delete',{key:KEY,id});renderQna();};
+window.iSend=async()=>{const t=$('#iQnaText');const v=(t.value||'').trim();if(!v)return;await jpost('/api/qna',{key:KEY,body:v});t.value='';renderQna();};
+window.qnaDel=async(id)=>{if(!confirm('이 메시지를 삭제할까요?'))return;await jpost('/api/qna/delete',{key:KEY,id});renderQna();};
 
 /* ---- 시스템 정보 (자격증명 · 학생 계정) ---- */
 async function renderSys(){

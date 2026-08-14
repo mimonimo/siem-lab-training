@@ -339,6 +339,14 @@ def api_instr_unlock():
     d = request.json or {}; team = d.get("team"); stage = int(d.get("stage", 0))
     if not team: return jsonify(error="bad request"), 400
     stage = max(0, min(stage, NUM_STAGES))     # 0 = 자동해금만 사용
+    if team in ("*", "__ALL__"):               # 전체 학생 일괄 해금(강의 운영용)
+        targets = sorted(VALID_USERS - {INSTRUCTOR_TEAM})
+        with _lock:
+            for u in targets:
+                db().execute("INSERT INTO umeta(team,override) VALUES(?,?) "
+                             "ON CONFLICT(team) DO UPDATE SET override=excluded.override", (u, stage))
+            db().commit()
+        return jsonify(ok=True, team="*", override=stage, count=len(targets))
     with _lock:
         db().execute("INSERT INTO umeta(team,override) VALUES(?,?) "
                      "ON CONFLICT(team) DO UPDATE SET override=excluded.override", (team, stage))
