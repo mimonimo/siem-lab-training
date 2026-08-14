@@ -167,6 +167,17 @@
   .sresult .it{padding:9px 13px;border-bottom:1px solid rgba(255,255,255,.14);cursor:pointer;font-size:13px}
   .sresult .it:last-child{border-bottom:0}.sresult .it:hover{background:rgba(255,255,255,.1)}
   .notice li,.doctbl .dl,.quick a,.more{cursor:pointer}
+  .lvbtn{border:1px solid var(--bw-line);background:#fafcff;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer}
+  .lvbtn:hover{border-color:var(--bw-blue)}
+  .lvform label{display:block;font-size:12px;color:var(--bw-mut);font-weight:600;margin:8px 0 4px}
+  .lvform .row{display:flex;align-items:center;gap:8px}
+  .lvform input,.lvform select,.lvform textarea{border:1px solid var(--bw-line);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;width:100%}
+  .lvform input:focus,.lvform select:focus,.lvform textarea:focus{border-color:var(--bw-blue)}
+  .lvform textarea{min-height:44px;resize:vertical}
+  .lvform>button{margin-top:12px;width:100%;background:var(--bw-blue);color:#fff;border:0;border-radius:8px;padding:10px;font-weight:700;cursor:pointer}
+  .lvlist{margin-top:12px}
+  .lvlist .it{border-top:1px dashed var(--bw-line);padding:8px 0;font-size:13px;display:flex;justify-content:space-between;gap:10px}
+  .lvlist .st{font-size:11px;font-weight:700;color:var(--bw-accent);white-space:nowrap}
   @media(max-width:820px){.wrap{grid-template-columns:1fr}.hero,.card,.board{grid-column:auto}
     .con-body{grid-template-columns:1fr}}
 </style>
@@ -285,11 +296,24 @@
           <div><b>21.0</b><span>잔여 연차</span></div><div><b>2</b><span>이번달 지각</span></div>
           <div><b>168h</b><span>이번달 근무</span></div>
         </div>
+        <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+          <button class="lvbtn" id="chkIn">출근 체크</button>
+          <button class="lvbtn" id="chkOut">퇴근 체크</button>
+          <span id="chkMsg" style="font-size:12.5px;color:var(--bw-mut);align-self:center"></span>
+        </div>
       </section>
       <aside class="card">
         <h2><span class="dot"></span>휴가 신청</h2>
-        <div class="quick"><a data-visit="/portal/attendance"><span class="ic">🗓️</span>휴가 신청서</a>
-          <a data-visit="/portal/attendance/today"><span class="ic">✅</span>출퇴근 체크</a></div>
+        <div class="lvform">
+          <label>기간</label>
+          <div class="row"><input type="date" id="lvFrom"><span>~</span><input type="date" id="lvTo"></div>
+          <label>종류</label>
+          <select id="lvType"><option>연차</option><option>반차(오전)</option><option>반차(오후)</option><option>병가</option></select>
+          <label>사유</label>
+          <textarea id="lvReason" placeholder="사유를 입력하세요"></textarea>
+          <button id="lvBtn">휴가 신청</button>
+        </div>
+        <div id="lvList" class="lvlist"></div>
       </aside>
     </div>
 
@@ -544,6 +568,19 @@
   $('#lgBtn').onclick=doLogin;
   $('#lgPass').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
   $('#lgUser').addEventListener('keydown',function(e){if(e.key==='Enter')$('#lgPass').focus();});
+
+  // ---- 근태/휴가 (실제 동작) ----
+  function nowT(){return new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});}
+  var _ci=$('#chkIn'); if(_ci)_ci.onclick=function(){var t=nowT();toast('출근 처리되었습니다 · '+t,'ok');logVisit('/portal/attendance/checkin');var m=$('#chkMsg');if(m)m.textContent='오늘 출근 '+t;};
+  var _co=$('#chkOut'); if(_co)_co.onclick=function(){var t=nowT();toast('퇴근 처리되었습니다 · '+t,'ok');logVisit('/portal/attendance/checkout');var m=$('#chkMsg');if(m)m.textContent='퇴근 '+t;};
+  var _lv=$('#lvBtn'); if(_lv)_lv.onclick=function(){
+    var f=$('#lvFrom').value,t=$('#lvTo').value,ty=$('#lvType').value,rs=($('#lvReason').value||'').trim();
+    if(!f||!t){toast('휴가 기간을 선택하세요','warn');return;}
+    var it=document.createElement('div');it.className='it';
+    it.innerHTML='<span>'+esc(ty)+' · '+esc(f)+' ~ '+esc(t)+(rs?' · '+esc(rs):'')+'</span><span class="st">승인대기</span>';
+    $('#lvList').prepend(it); $('#lvReason').value='';
+    toast('휴가 신청이 접수되었습니다.','ok'); logVisit('/portal/attendance/apply');
+  };
 
   loadBoard(); refresh(); setPad();
 })();
