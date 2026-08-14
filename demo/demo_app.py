@@ -138,6 +138,7 @@ CMD_PAT = re.compile(r"(;|\||&&|`|\$\(|\bid\b|\bwhoami\b|\buname\b|\bcat\b|\bwge
 XSS_PAT = re.compile(r"(<script|onerror\s*=|onload\s*=|javascript:|<img|<svg|<iframe|"
                      r"document\.cookie|alert\s*\()", re.I)
 SQLI_PAT = re.compile(r"('|--|\bor\b\s+['\"\d]|\bunion\b|\bselect\b|1\s*=\s*1|;|\bdrop\b)", re.I)
+BADFILE_PAT = re.compile(r"\.(php\d?|phtml|jsp|jspx|asp|aspx|sh|cgi|pl|exe|bat|war)$", re.I)
 DEMO_USER = os.environ.get("DEMO_LOGIN_USER", "khw")
 DEMO_PASS = os.environ.get("DEMO_LOGIN_PASS", "bridge2026")
 
@@ -229,6 +230,27 @@ def demo_login():
     append_lines([combined(ATTACKER, "POST", "/login", 401, 0, UA_ATTACK)])
     return jsonify(result="fail", detail="아이디 또는 비밀번호가 올바르지 않습니다.",
                    expect="인증 실패 401 — 반복되면 무차별 대입(brute force)")
+
+@app.route("/demo/upload", methods=["POST"])
+def demo_upload():
+    """File attach. Executable extensions = webshell upload (attacker uploads then
+    accesses /uploads/shell.php?cmd=...) -> rule 100101. Others = benign."""
+    from urllib.parse import quote
+    fn = ((request.json or {}).get("filename", "") or "").strip()[:120]
+    if not fn:
+        return jsonify(error="파일을 선택하세요"), 400
+    if BADFILE_PAT.search(fn):
+        append_lines([combined(ATTACKER, "POST", "/upload", 200, 90, UA_ATTACK),
+                      combined(ATTACKER, "GET", f"/uploads/{quote(fn, safe='')}?cmd=id", 200, 120, UA_ATTACK)])
+        return jsonify(flagged=True, rule="100101",
+                       detail="실행 가능한 스크립트 파일이 업로드되었습니다 (웹셸 업로드 시도).",
+                       expect="rule.id 100101 · 업로드된 웹셸에 cmd= 접근",
+                       anat=dict(page="/uploads/"+fn, method="POST→GET", vector="파일 업로드(확장자 검증 우회)",
+                                 payload=fn, src=ATTACKER))
+    ip = f"192.168.208.{random.randint(100,240)}"
+    append_lines([combined(ip, "POST", "/upload", 200, 90, UA_NORMAL)])
+    return jsonify(flagged=False, rule="탐지 없음", detail="파일이 정상 첨부되었습니다.",
+                   anat=dict(page="/upload", method="POST", vector="파일 첨부", payload=fn, src=ip))
 
 @app.route("/demo/visit", methods=["POST"])
 def demo_visit():
