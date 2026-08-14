@@ -155,10 +155,9 @@
         <h1>안녕하세요, 김현우님 👋</h1>
         <p>포털 통합 검색입니다. 문서·공지·게시글을 한 번에 찾아보세요.</p>
         <div class="searchbar">
-          <input id="q" placeholder="검색어 입력 (예: 휴가신청서)  ·  실습: id, cat /etc/passwd 등도 넣어보세요">
+          <input id="q" placeholder="검색어를 입력하세요 (문서·공지·게시글 통합 검색)">
           <button id="qBtn">검색</button>
         </div>
-        <div class="searchhint">💡 이 검색창(search.php)은 실습용으로 <b>입력값을 그대로 서버 명령처럼 처리</b>합니다. 명령을 넣으면 웹셸처럼 로그가 남습니다.</div>
         <div class="searchres" id="qRes"></div>
       </section>
       <section class="card">
@@ -212,9 +211,8 @@
         <div id="posts"></div>
         <div class="writebox">
           <div class="row"><input id="bAuthor" placeholder="작성자" value="게스트">
-            <textarea id="bBody" placeholder="댓글을 입력하세요 (실습: <script>·<img onerror=…> 같은 입력도 시도해 보세요)"></textarea></div>
-          <div class="row"><span class="vuln-note">⚠ 이 게시판은 입력을 필터링하지 않는 취약한 예시입니다(저장형 XSS 실습용).</span>
-            <button id="bBtn">등록</button></div>
+            <textarea id="bBody" placeholder="댓글을 입력하세요"></textarea></div>
+          <div class="row"><span></span><button id="bBtn">등록</button></div>
         </div>
       </section>
     </div>
@@ -260,9 +258,8 @@
         </ul>
         <div class="writebox">
           <input id="tTitle" placeholder="제목">
-          <textarea id="tBody" placeholder="문의 내용을 입력하세요 (실습: 이 입력창도 명령을 넣으면 웹셸처럼 처리됩니다)"></textarea>
-          <div class="row"><span class="vuln-note">⚠ 문의 본문도 서버에서 그대로 처리되는 취약 예시입니다.</span>
-            <button id="tBtn">문의 등록</button></div>
+          <textarea id="tBody" placeholder="문의 내용을 입력하세요"></textarea>
+          <div class="row"><span></span><button id="tBtn">문의 등록</button></div>
           <div class="searchres" id="tRes" style="background:#fef0ee;border-color:#f1c7c0;color:#8a3227"></div>
         </div>
       </section>
