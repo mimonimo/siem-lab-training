@@ -264,6 +264,50 @@ Aug 13 04:38:05 siem sshd[22004]: <span class="hl2">Failed password</span> for i
       </div>
       <div class="note">🔎 검색은 <b>필드:값</b> 형식입니다. 문자열은 <code>full_log:"..."</code>, IP·계정은 <code>data.srcip:"..."</code>·<code>data.dstuser:"..."</code>, 여러 조건은 <code>and</code>/<code>or</code>로 연결합니다.<br>
       ⚠️ <b>대문자·특수문자(:)</b>가 든 값은 따옴표 검색이 안 걸릴 수 있습니다. 이럴 땐 <b>와일드카드</b>를 쓰세요 — 예: <code>full_log:*NOPASSWD*</code>.</div>
+
+      <h3>🔤 DQL 검색 문법 (Discover 검색창)</h3>
+      <p class="sub">Wazuh 대시보드는 <b>DQL</b>(Dashboards Query Language)로 검색합니다. 아래 문법만 알면 대부분의 분석이 됩니다.</p>
+      <div class="tablewrap"><table>
+        <tr><th style="width:160px">문법</th><th>의미</th><th>예시</th></tr>
+        <tr><td><code>필드:값</code></td><td>필드가 값과 일치</td><td><code>rule.id:100101</code></td></tr>
+        <tr><td><code>필드:"문구"</code></td><td>정확한 문구(공백 포함)</td><td><code>full_log:"search.php"</code></td></tr>
+        <tr><td><code>and · or · not</code></td><td>조건 결합 / 제외</td><td><code>data.srcip:"198.51.100.23" and rule.level &gt;= 10</code></td></tr>
+        <tr><td><code>*</code> (와일드카드)</td><td>부분 일치</td><td><code>full_log:*NOPASSWD*</code> · <code>data.srcip:198.51.100.*</code></td></tr>
+        <tr><td><code>&gt;= &gt; &lt;= &lt;</code></td><td>숫자 비교</td><td><code>rule.level &gt;= 7</code></td></tr>
+        <tr><td><code>필드:*</code></td><td>필드가 존재하는 문서</td><td><code>data.srcip:*</code></td></tr>
+        <tr><td><code>( )</code></td><td>그룹화(우선순위)</td><td><code>(rule.id:100101 or rule.id:100102) and data.srcip:*</code></td></tr>
+        <tr><td><code>not</code></td><td>특정 값 제외</td><td><code>data.srcip:* and not data.srcip:"192.168.208.50"</code></td></tr>
+      </table></div>
+
+      <h3>📑 이 실습의 주요 필드</h3>
+      <div class="tablewrap"><table>
+        <tr><th style="width:210px">필드</th><th>뜻 · 쓰임</th></tr>
+        <tr><td><code>data.srcip</code></td><td>출발지 IP — 공격자 추적의 핵심(피벗 기준)</td></tr>
+        <tr><td><code>data.srcuser</code> · <code>data.dstuser</code></td><td>출발 / 대상 계정 (예: dstuser:"root")</td></tr>
+        <tr><td><code>rule.id</code></td><td>탐지 룰 번호 (100101 등)</td></tr>
+        <tr><td><code>rule.level</code></td><td>심각도 0~15 — 높을수록 위험(우선순위 선별에 유용)</td></tr>
+        <tr><td><code>rule.description</code></td><td>룰 설명 문구</td></tr>
+        <tr><td><code>rule.groups</code></td><td>룰 분류 (예: authentication_success)</td></tr>
+        <tr><td><code>location</code></td><td>로그 원본 파일 경로 (어느 로그에서 왔는지)</td></tr>
+        <tr><td><code>full_log</code></td><td>로그 원문 전체 — 가장 많이 검색하는 필드</td></tr>
+      </table></div>
+
+      <h3>🧪 실전 DQL 레시피</h3>
+      <div class="grid2">
+        <div>
+          <div class="q">data.srcip:"198.51.100.23"</div>
+          <div class="q">rule.id:100101 or rule.id:100102</div>
+          <div class="q">rule.level &gt;= 10</div>
+          <div class="q">location:"/var/log/auth.log" and full_log:"Failed"</div>
+        </div>
+        <div>
+          <div class="q">full_log:"search.php" and full_log:"cmd="</div>
+          <div class="q">data.srcip:198.51.100.* and not rule.groups:authentication_success</div>
+          <div class="q">full_log:*NOPASSWD*</div>
+          <div class="q">location:"/var/log/ufw.log" and full_log:"BLOCK"</div>
+        </div>
+      </div>
+      <div class="tip">💡 <b>DQL 팁</b> — ① 대문자·특수문자(:)가 든 값은 <code>full_log:*값*</code> 와일드카드로. ② 탐지 알림만 볼 땐 <code>wazuh-alerts-*</code>, 전체 원문은 <code>wazuh-archives-*</code>. ③ 필드명이 헷갈리면 왼쪽 <b>Available fields</b>에서 필드를 클릭해 값 분포를 먼저 확인. ④ 결과가 이상하면 우측 상단 <b>시간 범위(Last 1 year)</b>부터 점검.</div>
     </div>
 
     <!-- 7. 실전 예제 -->
