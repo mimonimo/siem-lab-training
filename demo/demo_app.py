@@ -137,6 +137,9 @@ CMD_PAT = re.compile(r"(;|\||&&|`|\$\(|\bid\b|\bwhoami\b|\buname\b|\bcat\b|\bwge
                      r"\bcurl\b|\bnc\b|\bbash\b|/etc/passwd|cmd=)", re.I)
 XSS_PAT = re.compile(r"(<script|onerror\s*=|onload\s*=|javascript:|<img|<svg|<iframe|"
                      r"document\.cookie|alert\s*\()", re.I)
+SQLI_PAT = re.compile(r"('|--|\bor\b\s+['\"\d]|\bunion\b|\bselect\b|1\s*=\s*1|;|\bdrop\b)", re.I)
+DEMO_USER = os.environ.get("DEMO_LOGIN_USER", "khw")
+DEMO_PASS = os.environ.get("DEMO_LOGIN_PASS", "bridge2026")
 
 def _ts():
     return datetime.now(tz=KST).strftime("%m-%d %H:%M")
@@ -202,6 +205,30 @@ def demo_board():
                        note=("POST 본문은 access.log의 URL에 남지 않습니다 — "
                              "웹 접근 로그만으론 XSS 본문을 못 볼 수 있습니다(앱/WAF 로그 필요)."))
     return jsonify(posts=BOARD)
+
+@app.route("/demo/login", methods=["POST"])
+def demo_login():
+    """Real-ish login. SQLi payload in the fields = injection attempt(logged as
+    attacker). Wrong creds = 401 (brute-force surface). Right creds = success."""
+    from urllib.parse import quote
+    d = request.json or {}
+    u = (d.get("username", "") or "").strip()[:60]
+    p = (d.get("password", "") or "")[:60]
+    if SQLI_PAT.search(u) or SQLI_PAT.search(p):
+        line = combined(ATTACKER, "GET", f"/login?username={quote(u, safe='')}", 200, 120, UA_ATTACK)
+        append_lines([line])
+        return jsonify(result="sqli", detail="로그인 폼에 SQL 인젝션 패턴이 감지되었습니다.",
+                       expect="SQL 인젝션 시도 — 웹 접근 로그에 payload 노출",
+                       anat=dict(page="/login", method="GET", vector="username 파라미터(SQLi)",
+                                 payload=u, src=ATTACKER))
+    if u == DEMO_USER and p == DEMO_PASS:
+        ip = f"192.168.208.{random.randint(100,240)}"
+        append_lines([combined(ip, "POST", "/login", 302, 0, UA_NORMAL)])
+        return jsonify(result="ok", user="김현우 대리", detail="로그인 성공")
+    # failed -> 401 (repeat = brute force)
+    append_lines([combined(ATTACKER, "POST", "/login", 401, 0, UA_ATTACK)])
+    return jsonify(result="fail", detail="아이디 또는 비밀번호가 올바르지 않습니다.",
+                   expect="인증 실패 401 — 반복되면 무차별 대입(brute force)")
 
 @app.route("/demo/visit", methods=["POST"])
 def demo_visit():
