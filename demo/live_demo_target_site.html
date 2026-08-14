@@ -115,6 +115,8 @@
   .b-normal{background:#2f6f4f}.b-normal:hover{background:#38855f}
   .b-suspect{background:#a23a2f}.b-suspect:hover{background:#c0392b}
   .b-warn{background:#9a6b1e}.b-warn:hover{background:#b8842a}
+  .b-auto{width:100%;margin-top:9px;border:0;border-radius:8px;padding:9px 11px;font-size:12.5px;font-weight:700;color:#fff;background:#14568f;cursor:pointer;transition:.12s}
+  .b-auto:hover{background:#1a6dc2}.b-auto:disabled{opacity:.55;cursor:wait}
   .con-right{padding:12px 16px;display:flex;flex-direction:column;min-width:0}
   .banner{font-size:12.5px;border-radius:8px;padding:9px 12px;margin-bottom:8px;line-height:1.5;
     background:#132234;border:1px solid var(--con-line);color:var(--con-mut)}
@@ -391,9 +393,11 @@
           <button class="b-suspect" data-act="download">② 페이로드 다운로드<span class="rid">100101</span></button>
           <button class="b-suspect" data-act="exfil">③ 정보 유출<span class="rid">100101</span></button>
         </div>
+        <button class="b-auto" id="autoPlay" title="①→②→③를 순서대로 자동 시연">▶ 킬체인 자동 시연</button>
         <div class="lbl" style="margin-top:12px">기타 시나리오</div>
         <div class="btns">
           <button class="b-warn" data-act="scanner">웹 취약점 스캐너<span class="rid">100102</span></button>
+          <button class="b-warn" data-act="traversal">디렉터리 트래버설<span class="rid">web</span></button>
           <button class="b-warn" data-act="flood">로그인 반복 시도<span class="rid">5710</span></button>
           <button class="b-normal" data-act="normal">정상 직원 트래픽<span class="rid">정상</span></button>
         </div>
@@ -457,6 +461,33 @@
         .finally(function(){busy(false);});
     });
   });
+
+  // 킬체인 자동 시연: ①→②→③ 순차 재생
+  var autoBtn=$('#autoPlay');
+  function fireAct(act){
+    return fetch('/demo/act/'+act,{method:'POST'}).then(function(r){return r.json();}).then(function(j){
+      showBanner(j);
+      return fetch('/demo/log?n=16').then(function(r){return r.json();}).then(function(jj){
+        var lines=jj.lines||[]; render(lines, Math.max(0, lines.length-(j.added||1)));
+      });
+    });
+  }
+  if(autoBtn){
+    autoBtn.addEventListener('click', function(){
+      var seq=['webshell','download','exfil'], i=0;
+      busy(true); autoBtn.disabled=true; autoBtn.textContent='시연 중…';
+      (function step(){
+        if(i>=seq.length){
+          busy(false); autoBtn.disabled=false; autoBtn.textContent='▶ 킬체인 자동 시연';
+          banner.className='banner att';
+          banner.innerHTML='<b>킬체인 시연 완료</b> — 웹셸 실행 → 페이로드 다운로드 → 정보 유출이 순서대로 access.log에 기록되었습니다. 몇 초 뒤 Wazuh에서 <b>data.srcip:"203.0.113.66"</b> · <b>rule.id:100101</b>로 확인하세요.';
+          return;
+        }
+        fireAct(seq[i++]).then(function(){ setTimeout(step, 2200); })
+          .catch(function(){ busy(false); autoBtn.disabled=false; autoBtn.textContent='▶ 킬체인 자동 시연'; });
+      })();
+    });
+  }
 
   // search box -> RCE-ish webshell entry
   function doSearch(){

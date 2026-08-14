@@ -94,6 +94,14 @@ SCENARIOS = {
     req=[("GET", f"/portal/login?try={i}", 401, 210) for i in range(15)],
     detail="짧은 간격 로그인 반복(15건)",
     expect="반복 인증 실패 패턴"),
+ "traversal": dict(
+    label="디렉터리 트래버설", stage="정찰·접근",
+    ip=ATTACKER, ua=UA_ATTACK, rule="웹 공격 계열", color="warn",
+    req=[("GET", "/download?file=../../../../etc/passwd", 403, 210),
+         ("GET", "/download?file=..%2f..%2f..%2f..%2fetc%2fpasswd", 403, 210),
+         ("GET", "/static/../../../etc/shadow", 403, 190)],
+    detail="경로 조작(../)으로 시스템 파일 접근 시도",
+    expect="웹 공격 룰(디렉터리 트래버설) 계열 · full_log에서 ../ 패턴으로 탐색"),
 }
 
 # ---- static ---------------------------------------------------------------- #
