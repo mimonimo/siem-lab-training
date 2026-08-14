@@ -76,12 +76,41 @@
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .kbd{font-family:var(--mono);background:#fff;border:1px solid var(--bd);border-radius:5px;padding:1px 6px;font-size:12px}
   @media(max-width:640px){.grid2{grid-template-columns:1fr}.sec{padding:18px}}
+  /* ---- 페이지형 열람(화면): 사이드바 + 한 번에 한 섹션 ---- */
+  @media screen{
+    .lead{display:none}                                  /* 표지·목차는 사이드바로 대체(인쇄 시 복원) */
+    .sidenav{position:fixed;top:52px;left:0;width:238px;height:calc(100vh - 52px);overflow-y:auto;
+      background:var(--panel);border-right:1px solid var(--bd);padding:14px 12px 40px;z-index:15}
+    .sidenav .sgrp{font-size:10px;font-weight:750;letter-spacing:.04em;color:var(--ink3);text-transform:uppercase;margin:15px 8px 5px}
+    .sidenav .sgrp:first-child{margin-top:2px}
+    .sidenav a{display:block;font-size:12.8px;font-weight:600;color:var(--ink2);padding:6px 10px;border-radius:7px;cursor:pointer;line-height:1.35;text-decoration:none}
+    .sidenav a:hover{background:var(--panel2);color:var(--pri)}
+    .sidenav a.on{background:var(--pri-wash);color:var(--pri-d);font-weight:750}
+    .wrap{margin-left:238px;max-width:900px;padding:22px 30px 40px}
+    .sec{display:none}
+    .sec.active{display:block;animation:pgfade .22s ease}
+    @keyframes pgfade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+    .pagenav{display:flex;align-items:center;gap:12px;margin:30px 0 6px;padding-top:16px;border-top:1px solid var(--bd)}
+    .pagenav button{border:1px solid var(--bd2);background:var(--panel);color:var(--ink);border-radius:8px;padding:9px 16px;font-size:13px;font-weight:650;cursor:pointer;transition:.12s}
+    .pagenav button:hover:not(:disabled){border-color:var(--pri);color:var(--pri)}
+    .pagenav button:disabled{opacity:.4;cursor:default}
+    .pagenav .pgmid{flex:1;text-align:center;font-size:12px;color:var(--ink3);font-weight:600}
+    .pagenav .nx{margin-left:auto}
+  }
+  @media screen and (max-width:860px){
+    .sidenav{position:static;width:auto;height:auto;border-right:0;border-bottom:1px solid var(--bd);
+      display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:8px 12px}
+    .sidenav .sgrp{display:none}
+    .sidenav a{white-space:nowrap;flex:none}
+    .wrap{margin-left:0;padding:18px 16px 36px}
+  }
   /* ---- 인쇄/PDF 저장: 웹 화면이 아니라 '문서'처럼 보이게 ---- */
   @media print{
     *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
     @page{margin:16mm 15mm}
     html,body{background:#fff!important;font-size:10.5pt;line-height:1.5;color:#1a1c21}
     .hdr{display:none!important}                      /* 웹 헤더 완전 제거 */
+    .sidenav,.pagenav{display:none!important}          /* 페이지 네비 제거 → 전체 문서로 인쇄 */
     .wrap{max-width:none;margin:0;padding:0}
     .toc{display:none}
     /* 표지/제목 블록 */
@@ -119,10 +148,11 @@
 </head>
 <body>
   <header class="hdr"><div class="hdr-in">
-    <div class="brand" style="cursor:pointer" title="맨 위로" onclick="window.scrollTo({top:0,behavior:'smooth'})"><span class="mk">B</span>실습 교안 · 위협 탐지</div>
+    <div class="brand" style="cursor:pointer" title="처음 페이지로" onclick="if(window.guideHome)guideHome();else window.scrollTo({top:0})"><span class="mk">B</span>실습 교안 · 위협 탐지</div>
     <div class="hdr-r"><a class="hbtn" href="/">← 미션 포털</a><button class="hbtn" onclick="window.print()">PDF 저장</button><button class="hbtn pri" onclick="window.open('https://'+location.hostname,'_blank')">Wazuh 열기 ↗</button></div>
   </div></header>
 
+  <nav class="sidenav" id="sidenav"></nav>
   <div class="wrap">
     <div class="lead">
       <h1>침해 웹서버 로그 분석 실습 교안</h1>
@@ -717,7 +747,63 @@ Aug 13 04:38:05 siem sshd[22004]: <span class="hl2">Failed password</span> for i
       </table></div>
     </div>
 
+    <div class="pagenav" id="pagenav"></div>
     <p style="text-align:center;color:var(--ink3);font-size:12px;margin:24px 0">브릿지웍스 시큐리티 · 위협 탐지 실습 교안</p>
   </div>
+<script>
+(function(){
+  var PARTS=[
+    {t:'1부 · 배경 이해', ids:['s1','s2']},
+    {t:'2부 · 로그 읽기', ids:['s3','s4']},
+    {t:'3부 · 분석 실전', ids:['s5','s6','s7']},
+    {t:'4부 · 참고 자료', ids:['s8','s9','s10','s11']}
+  ];
+  var order=[]; PARTS.forEach(function(p){p.ids.forEach(function(id){order.push(id);});});
+  function secTitle(id){var s=document.getElementById(id); if(!s)return id;
+    var h=s.querySelector('h2'); if(!h)return id;
+    var n=h.querySelector('.n'), num=n?n.textContent.trim():'';
+    var rest=h.textContent.replace(/\s+/g,' ').trim();
+    if(num&&rest.indexOf(num)===0)rest=rest.slice(num.length).trim();
+    return (num?num+'. ':'')+rest;}
+  var cur=0;
+  function buildNav(){
+    var nav=document.getElementById('sidenav'), html='';
+    PARTS.forEach(function(p){
+      html+='<div class="sgrp">'+p.t+'</div>';
+      p.ids.forEach(function(id){
+        var idx=order.indexOf(id);
+        html+='<a data-idx="'+idx+'" onclick="guideGo('+idx+')">'+secTitle(id)+'</a>';
+      });
+    });
+    nav.innerHTML=html;
+  }
+  function render(){
+    order.forEach(function(id,i){var s=document.getElementById(id); if(s)s.classList.toggle('active',i===cur);});
+    var links=document.querySelectorAll('#sidenav a');
+    links.forEach(function(a){a.classList.toggle('on',+a.getAttribute('data-idx')===cur);});
+    var pn=document.getElementById('pagenav');
+    pn.innerHTML='<button class="pv" '+(cur===0?'disabled':'')+' onclick="guideGo('+(cur-1)+')">← 이전</button>'
+      +'<span class="pgmid">'+(cur+1)+' / '+order.length+' · '+secTitle(order[cur])+'</span>'
+      +'<button class="nx" '+(cur===order.length-1?'disabled':'')+' onclick="guideGo('+(cur+1)+')">다음 →</button>';
+    var active=document.querySelector('.sidenav a.on');
+    if(active&&active.scrollIntoView)active.scrollIntoView({block:'nearest'});
+  }
+  window.guideGo=function(i){
+    if(i<0||i>=order.length)return;
+    cur=i; render();
+    try{history.replaceState(null,'','#'+order[cur]);}catch(e){location.hash=order[cur];}
+    window.scrollTo({top:0,behavior:'smooth'});
+  };
+  window.guideHome=function(){guideGo(0);};
+  // deep-link: TOC/미션포털에서 #s6 등으로 진입하면 해당 페이지 열기
+  function fromHash(){var h=(location.hash||'').replace('#','');var i=order.indexOf(h);return i>=0?i:0;}
+  document.addEventListener('keydown',function(e){
+    if(e.target&&/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
+    if(e.key==='ArrowLeft')guideGo(cur-1); else if(e.key==='ArrowRight')guideGo(cur+1);
+  });
+  window.addEventListener('hashchange',function(){var i=fromHash(); if(i!==cur)guideGo(i);});
+  buildNav(); cur=fromHash(); render();
+})();
+</script>
 </body>
 </html>
