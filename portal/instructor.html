@@ -213,10 +213,47 @@ async function renderSubs(){
     const act=s.manual&&s.status!=='graded'?`<input class="award" id="aw_${esc(s.team)}_${s.qno}" type="number" min="0" max="${s.max}" value="${s.max}"> <button class="btn sm" onclick="award('${esc(s.team)}',${s.qno})">채점</button>`:'';
     return `<tr><td><b>${esc(s.team)}</b></td><td>${s.qno}</td><td class="${stc}">${s.status}</td><td>${s.score}/${s.max}</td><td>힌트${s.hints_used}·오답${s.wrong_count}</td><td style="max-width:260px">${esc(s.answer)}</td><td>${act}</td></tr>`;
   }).join('');
-  $('#subView').innerHTML=`<div class="lb">${chips}</div><div class="card" style="padding:0;overflow-x:auto"><table>
+  $('#subView').innerHTML=cohortSummary(d.subs,(lb.d&&lb.d.board)||[])+
+    `<div class="lb">${chips}</div><div class="card" style="padding:0;overflow-x:auto"><table>
     <tr><th>학생</th><th>문항</th><th>상태</th><th>점수</th><th>기록</th><th>답안</th><th>수동채점</th></tr>
     ${rows||'<tr><td colspan=7 style="text-align:center;color:#94a3b8;padding:20px">제출 없음</td></tr>'}</table></div>
     <div style="margin-top:10px"><button class="btn sm" onclick="renderSubs()">새로고침</button></div>`;
+}
+/* 코호트 현황 요약 — 기존 제출 데이터로 클라이언트에서 집계(백엔드 무변경) */
+function cohortSummary(subs, board){
+  const teams=[...new Set(subs.map(s=>s.team))];
+  const solved=s=> s.status==='correct' || (s.status==='graded' && (+s.score)>0);
+  const pending=subs.filter(s=>s.manual && s.status==='manual').length;
+  const scores=board.map(r=>+r.score);
+  const avg=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):0;
+  const max=scores.length?Math.max(...scores):0;
+  const totalStudents=(SOL&&SOL.questions)?undefined:undefined;
+  // 문항별 정답률
+  const perQ={};
+  subs.forEach(s=>{const q=perQ[s.qno]||(perQ[s.qno]={att:0,ok:0});q.att++;if(solved(s))q.ok++;});
+  const qtitle=n=>{const q=(SOL.questions||[]).find(x=>x.qno===n);return q?q.question:('Q'+n);};
+  const missed=Object.entries(perQ).map(([qno,v])=>({qno:+qno,att:v.att,ok:v.ok,rate:v.att?v.ok/v.att:0}))
+     .filter(x=>x.att>0).sort((a,b)=>a.rate-b.rate || b.att-a.att).slice(0,6);
+  const stat=(label,val,sub)=>`<div style="flex:1;min-width:96px"><div style="font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-.5px">${val}</div><div style="font-size:11.5px;color:var(--ink3);font-weight:600">${label}${sub?` <span style="color:var(--ink3)">${sub}</span>`:''}</div></div>`;
+  const bar=x=>{const pct=Math.round(x.rate*100);const col=pct<40?'var(--rose)':pct<70?'var(--amber)':'var(--emer)';
+    return `<div style="display:flex;align-items:center;gap:9px;padding:5px 0;border-bottom:1px dashed var(--bd)">
+      <span class="qno" style="width:24px;height:24px;font-size:12px">${x.qno}</span>
+      <span style="flex:1;min-width:0;font-size:12.5px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(qtitle(x.qno))}</span>
+      <span style="width:120px;height:8px;background:var(--panel3);border-radius:6px;overflow:hidden;flex:none"><span style="display:block;height:100%;width:${pct}%;background:${col}"></span></span>
+      <span style="width:74px;text-align:right;font-size:11.5px;color:var(--ink3);flex:none">정답 ${x.ok}/${x.att} (${pct}%)</span></div>`;};
+  if(!subs.length) return `<div class="card hint-note">아직 제출이 없습니다. 학생들이 답안을 제출하면 이곳에 참여율·평균·문항별 정답률이 집계됩니다.</div>`;
+  return `<div class="card">
+    <div class="qtext">현황 요약</div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;margin:4px 0 6px">
+      ${stat('참여 학생',teams.length+'명')}
+      ${stat('평균 점수',avg+'점')}
+      ${stat('최고 점수',max+'점')}
+      ${stat('총 제출',subs.length+'건')}
+      ${stat('채점 대기',pending+'건','(서술형)')}
+    </div>
+    <div style="font-size:12.5px;font-weight:750;color:var(--ink2);margin:10px 0 2px">가장 많이 틀린 문항 <span style="color:var(--ink3);font-weight:500">— 강의 때 짚어주기 좋은 순서</span></div>
+    ${missed.map(bar).join('')||'<div style="font-size:12.5px;color:var(--ink3);padding:6px 0">집계할 데이터가 아직 적습니다.</div>'}
+  </div>`;
 }
 window.award=async(team,qno)=>{const v=+document.getElementById(`aw_${team}_${qno}`).value;await jpost('/api/instructor/grade',{key:KEY,team,qno,award:v});renderSubs();};
 async function renderUnlock(){
